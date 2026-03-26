@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DigiPrices — Admin</title>
+    <link rel="stylesheet" href="style.css" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-brand"><img src="Pictures/logo-primary.png" alt="DigiPrices Logo" class="logo-nav"></div>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="admin.html" class="active">Admin</a>
+            <a href="logs.html">Logs</a>
+        </div>
+        <div class="nav-user">
+            <span id="navUsername">Admin</span>
+            <button class="btn-logout" onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <main class="main-content">
+
+        <!-- DISPLAYS SECTION -->
+        <div class="page-header">
+            <h2>Manage Displays</h2>
+            <button class="btn-primary small" onclick="openModal('displayModal')">+ Add Display</button>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="data-table" id="displaysTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Section</th>
+                        <th>MAC Address</th>
+                        <th>IP Address</th>
+                        <th>Product</th>
+                        <th>FW Version</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="displaysBody">
+                    <tr>
+                        <td colspan="7" class="table-empty">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PRODUCTS SECTION -->
+        <div class="page-header" style="margin-top: 2.5rem;">
+            <h2>Manage Products</h2>
+            <button class="btn-primary small" onclick="openModal('productModal')">+ Add Product</button>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="data-table" id="productsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Display Name</th>
+                        <th>Name</th>
+                        <th>Price</th>
+                        <th>Currency</th>
+                        <th>Barcode</th>
+                        <th>Last Changed</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="productsBody">
+                    <tr>
+                        <td colspan="8" class="table-empty">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- ADD DISPLAY MODAL -->
+    <div class="modal-overlay" id="displayModal" style="display:none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Add Display</h3>
+                <button class="modal-close" onclick="closeModal('displayModal')">✕</button>
+            </div>
+            <div class="form-group">
+                <label>Section</label>
+                <input type="text" id="newSection" placeholder="e.g. Aisle 3" />
+            </div>
+            <div class="form-group">
+                <label>MAC Address</label>
+                <input type="text" id="newMac" placeholder="AA:BB:CC:DD:EE:FF" />
+            </div>
+            <div class="form-group">
+                <label>IP Address</label>
+                <input type="text" id="newIp" placeholder="192.168.1.x" />
+            </div>
+            <input type="hidden" id="newFwVersion" value="v1.0.0" />
+            <button class="btn-primary" onclick="addDisplay()">Save Display</button>
+        </div>
+    </div>
+
+    <!-- EDIT DISPLAY MODAL -->
+    <div class="modal-overlay" id="editDisplayModal" style="display:none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Edit Display</h3>
+                <button class="modal-close" onclick="closeModal('editDisplayModal')">✕</button>
+            </div>
+            <input type="hidden" id="editDisplayId" />
+            <div class="form-group">
+                <label>Section</label>
+                <input type="text" id="editSection" />
+            </div>
+            <div class="form-group">
+                <label>MAC Address</label>
+                <input type="text" id="editMac" />
+            </div>
+            <div class="form-group">
+                <label>IP Address</label>
+                <input type="text" id="editIp" />
+            </div>
+            <div class="form-group">
+                <label>FW Version</label>
+                <input type="text" id="editFwVersion" />
+            </div>
+            <div class="form-group">
+                <label>Assign Product</label>
+                <select id="editProductId">
+                    <option value="">-- None --</option>
+                </select>
+            </div>
+            <button class="btn-primary" onclick="saveEditDisplay()">Save Changes</button>
+        </div>
+    </div>
+
+    <!-- ADD PRODUCT MODAL -->
+    <div class="modal-overlay" id="productModal" style="display:none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Add Product</h3>
+                <button class="modal-close" onclick="closeModal('productModal')">✕</button>
+            </div>
+            <div class="form-group">
+                <label>Display Name</label>
+                <input type="text" id="newDisplayingName" placeholder="e.g. Milk 1L" />
+            </div>
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="newName" placeholder="e.g. Full Fat Milk" />
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" id="newDescr" placeholder="Optional description" />
+            </div>
+            <div class="form-group">
+                <label>Price</label>
+                <input type="number" step="0.01" id="newPrice" placeholder="0.00" />
+            </div>
+            <div class="form-group">
+                <label>Price per kg</label>
+                <input type="number" step="0.01" id="newPricePerKg" placeholder="0.00" />
+            </div>
+            <div class="form-group">
+                <label>Currency</label>
+                <input type="text" id="newCurrencyCode" placeholder="EUR" value="EUR" />
+            </div>
+            <div class="form-group">
+                <label>Barcode</label>
+                <input type="text" id="newBarcode" placeholder="123456789" />
+            </div>
+            <button class="btn-primary" onclick="addProduct()">Save Product</button>
+        </div>
+    </div>
+
+    <!-- EDIT PRODUCT MODAL -->
+    <div class="modal-overlay" id="editProductModal" style="display:none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Edit Product</h3>
+                <button class="modal-close" onclick="closeModal('editProductModal')">✕</button>
+            </div>
+            <div class="form-group">
+                <label>Display Name</label>
+                <input type="text" id="editDisplayingName" />
+            </div>
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="editName" />
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" id="editDescr" />
+            </div>
+            <div class="form-group">
+                <label>Price</label>
+                <input type="number" step="0.01" id="editPrice" />
+            </div>
+            <div class="form-group">
+                <label>Price per kg</label>
+                <input type="number" step="0.01" id="editPricePerKg" />
+            </div>
+            <div class="form-group">
+                <label>Currency</label>
+                <input type="text" id="editCurrencyCode" />
+            </div>
+            <div class="form-group">
+                <label>Barcode</label>
+                <input type="text" id="editBarcode" />
+            </div>
+            <button class="btn-primary" onclick="saveEditProduct()">Save Changes</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

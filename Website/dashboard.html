@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DigiPrices — Dashboard</title>
+    <link rel="stylesheet" href="style.css" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-brand"><img src="Pictures/logo-primary.png" alt="DigiPrices Logo" class="logo-nav"></div>
+        <div class="nav-links">
+            <a href="dashboard.html" class="active">Dashboard</a>
+            <a href="admin.html">Admin</a>
+            <a href="logs.html">Logs</a>
+        </div>
+        <div class="nav-user">
+            <span id="navUsername">Admin</span>
+            <button class="btn-logout" onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h2>Connected Displays</h2>
+            <span class="badge" id="deviceCount">— devices</span>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-label">Total Displays</div>
+                <div class="stat-value" id="statTotal">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Online</div>
+                <div class="stat-value green" id="statOnline">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Offline</div>
+                <div class="stat-value red" id="statOffline">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Products Assigned</div>
+                <div class="stat-value" id="statProducts">—</div>
+            </div>
+        </div>
+
+        <div class="devices-grid" id="devicesGrid">
+            <!-- Populated by JS -->
+            <div class="placeholder-card">Loading displays...</div>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DigiPrices — Logs</title>
+    <link rel="stylesheet" href="style.css" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-brand"><img src="Pictures/logo-primary.png" alt="DigiPrices Logo" class="logo-nav"></div>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="admin.html">Admin</a>
+            <a href="logs.html" class="active">Logs</a>
+        </div>
+        <div class="nav-user">
+            <span id="navUsername">Admin</span>
+            <button class="btn-logout" onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h2>Activity Logs</h2>
+            <div class="filter-row">
+                <input type="text" id="logSearch" placeholder="Search logs..." oninput="filterLogs()" />
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="data-table" id="logsTable">
+                <thead>
+                    <tr>
+                        <th>Log ID</th>
+                        <th>Admin</th>
+                        <th>Display</th>
+                        <th>Product</th>
+                        <th>What Changed</th>
+                        <th>Changed At</th>
+                    </tr>
+                </thead>
+                <tbody id="logsBody">
+                    <tr>
+                        <td colspan="6" class="table-empty">Loading logs...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
