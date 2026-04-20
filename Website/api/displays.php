@@ -20,19 +20,27 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     $mac = $conn->real_escape_string($data['mac']);
     $ip = $conn->real_escape_string($data['ip']);
     $fw_version = $conn->real_escape_string($data['fw_version']);
+    $admin_id = intval($data['admin_id']);
 
     $sql = "INSERT INTO displays (section, mac, ip, fw_version) VALUES ('$section', '$mac', '$ip', '$fw_version')";
-    
+    $sql_insert = "INSERT INTO logs (id_log, admin_id, display_id, changed_at, what_changed) VALUES (NULL, $admin_id, LAST_INSERT_ID(), NULL, 'Added display with IP: $ip')";
     try {
         $conn->query($sql);
+        $conn->query($sql_insert);
         echo json_encode(["success" => true]);
     } catch (Exception $e) {
         echo json_encode(["success" => false, "message" => $e->getMessage()]);
     }
 }  else if($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     $id = intval($data['id_display']);
+    $admin_id = intval($data['admin_id']);
+    
+    $old = $conn->query("SELECT * FROM displays WHERE id_display = $id")->fetch_assoc();
+    $ip_old = $old['ip'];
+    $sql_insert = "INSERT INTO logs (id_log, admin_id, display_id, changed_at, what_changed) VALUES (NULL, $admin_id, $id, NULL, 'Deleted display with IP: $ip_old')";
     $sql = "DELETE FROM displays WHERE id_display = $id";
     try {
+        $conn->query($sql_insert);
         $conn->query($sql);
         echo json_encode(["success" => true]);
     } catch (Exception $e) {
@@ -45,11 +53,34 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     $ip = $conn->real_escape_string($data['ip']);
     $fw_version = $conn->real_escape_string($data['fw_version']);
     $product_id = !empty($data['product_id']) ? intval($data['product_id']) : 'NULL';
+    $admin_id = intval($data['admin_id']);
+
+    $old = $conn->query("SELECT * FROM displays WHERE id_display = $id")->fetch_assoc();
+    $ip_old = $old['ip'];
+    $product_id_old = $old['product_id'];
+    $section_old = $old['section'];
 
     $sql = "UPDATE displays SET section='$section', mac='$mac', ip='$ip', fw_version='$fw_version', product_id=$product_id WHERE id_display=$id";
+
+    $changes = "";
+    if($ip_old != $ip) {
+        $changes .= "IP changed from $ip_old to $ip; ";    
+    }
+    if ($product_id_old != $product_id) {
+        $changes .= "Product changed from $product_id_old to $product_id;";
+    }
+    if ($section_old != $section) {
+        $changes .= "Section changed from $section_old to $section";
+    }
+    if($changes != "") {
+        $sql_insert = "INSERT INTO logs (id_log, admin_id, display_id, changed_at, what_changed) VALUES (NULL, $admin_id, $id, NULL, '$changes')";
+        $conn->query($sql_insert);
+    }
+
+
     try {
         $conn->query($sql);
-        
+
         if(!empty($data['product_id'])) {
             $sql = "SELECT * FROM products WHERE id_product = $product_id";
             $result = $conn->query($sql);

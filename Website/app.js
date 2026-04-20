@@ -197,7 +197,7 @@ async function addDisplay() {
     const res = await fetch(API.displays, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ section, mac, ip, fw_version })
+        body: JSON.stringify({ section, mac, ip, fw_version, admin_id: getSession().id_admin })
     });
     const data = await res.json();
     if (data.success) {
@@ -235,7 +235,7 @@ async function saveEditDisplay() {
     const res = await fetch(API.displays, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_display: currentEditDisplayId, section, mac, ip, fw_version, product_id })
+        body: JSON.stringify({ id_display: currentEditDisplayId, section, mac, ip, fw_version, product_id, admin_id: getSession().id_admin })
     });
     const data = await res.json();
     if (data.success) {
@@ -251,7 +251,7 @@ async function deleteDisplay(id) {
     const res = await fetch(API.displays, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_display: id })
+        body: JSON.stringify({ id_display: id, admin_id: getSession().id_admin})
     });
     const data = await res.json();
     if (data.success) {
@@ -275,6 +275,7 @@ async function addProduct() {
             price_per_kg: document.getElementById('newPricePerKg').value,
             currency_code: document.getElementById('newCurrencyCode').value,
             barcode: document.getElementById('newBarcode').value,
+            admin_id: getSession().id_admin,
         })
     });
     const data = await res.json();
@@ -314,6 +315,7 @@ async function saveEditProduct() {
             price_per_kg: document.getElementById('editPricePerKg').value,
             currency_code: document.getElementById('editCurrencyCode').value,
             barcode: document.getElementById('editBarcode').value,
+            admin_id: getSession().id_admin
         })
     });
     const data = await res.json();
@@ -330,7 +332,10 @@ async function deleteProduct(id) {
     const res = await fetch(API.products, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_product: id })
+        body: JSON.stringify({
+            id_product: id,
+            admin_id: getSession().id_admin,
+        })
     });
     const data = await res.json();
     if (data.success) {

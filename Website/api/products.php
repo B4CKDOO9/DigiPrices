@@ -22,11 +22,14 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     $price_per_kg = floatval($data['price_per_kg']);
     $currency_code = $conn->real_escape_string($data['currency_code']);
     $barcode = $conn->real_escape_string($data['barcode']);
+    $admin_id = $conn->real_escape_string($data['admin_id']);
 
     $sql = "INSERT INTO products (displaying_name, name, descr, price, price_per_kg, currency_code, barcode, last_price_change) 
             VALUES ('$displaying_name', '$name', '$descr', $price, $price_per_kg, '$currency_code', '$barcode', NOW())";
+    $sql_insert = "INSERT INTO logs (id_log, admin_id, product_id, changed_at, what_changed) VALUES (NULL, $admin_id, LAST_INSERT_ID(), NULL, 'Created product $name with price: $price')";
     try {
         $conn->query($sql);
+        $conn->query($sql_insert);
         echo json_encode(["success" => true]);
     } catch (Exception $e) {
         echo json_encode(["success" => false, "message" => $e->getMessage()]);
@@ -41,6 +44,11 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     $price_per_kg = floatval($data['price_per_kg']);
     $currency_code = $conn->real_escape_string($data['currency_code']);
     $barcode = $conn->real_escape_string($data['barcode']);
+    $admin_id = $conn->real_escape_string($data['admin_id']);
+
+    $old = $conn->query("SELECT * FROM products WHERE id_product = $id")->fetch_assoc();
+    $price_old = $old['price'];
+    $name_old = $old['name'];
 
     $sql = "UPDATE products SET displaying_name='$displaying_name', name='$name', descr='$descr', 
             price=$price, price_per_kg=$price_per_kg, currency_code='$currency_code', barcode='$barcode', 
@@ -70,6 +78,18 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     curl_close($ch);
     }
 
+    $changes = "";
+    if($price_old != $price) {
+        $changes .= "Price: $price_old -> $price; ";
+    }
+    if($name_old != $name) {
+        $changes .= "Name: $name_old -> $name; ";
+    }
+    if($changes != "") {
+        $sql_insert = "INSERT INTO logs (id_log, admin_id, product_id, changed_at, what_changed) VALUES (NULL, $admin_id, $id, NULL, '$changes')";  
+        $conn->query($sql_insert);
+    }
+
     echo json_encode(["success" => true]);
 
     } catch (Exception $e) {
@@ -78,8 +98,16 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 } else if($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     $id = intval($data['id_product']);
+    $admin_id = $conn->real_escape_string($data['admin_id']);
+
+    $old = $conn->query("SELECT * FROM products WHERE id_product = $id")->fetch_assoc();
+    $price_old = $old['price'];
+    $name_old = $old['name'];
+    
+    $sql_insert = "INSERT INTO logs (id_log, admin_id, product_id, changed_at, what_changed) VALUES (NULL, $admin_id, $id, NULL, 'Deleted product $name_old with price: $price_old')";
     $sql = "DELETE FROM products WHERE id_product = $id";
     try {
+        $conn->query($sql_insert);
         $conn->query($sql);
         echo json_encode(["success" => true]);
     } catch (Exception $e) {
