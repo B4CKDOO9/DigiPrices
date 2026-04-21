@@ -26,7 +26,7 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $sql = "INSERT INTO products (displaying_name, name, descr, price, price_per_kg, currency_code, barcode, last_price_change) 
             VALUES ('$displaying_name', '$name', '$descr', $price, $price_per_kg, '$currency_code', '$barcode', NOW())";
-    $sql_insert = "INSERT INTO logs (id_log, admin_id, product_id, changed_at, what_changed) VALUES (NULL, $admin_id, LAST_INSERT_ID(), NULL, 'Created product $name with price: $price')";
+    $sql_insert = "INSERT INTO logs (id_log, admin_id, product_id, changed_at, what_changed) VALUES (NULL, $admin_id, LAST_INSERT_ID(), NOW(), 'Created product $name with price: $price')";
     try {
         $conn->query($sql);
         $conn->query($sql_insert);
@@ -36,7 +36,7 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
 } else if($_SERVER['REQUEST_METHOD'] === 'PUT') {
-    $id = intval($data['id_product']);
+    $id = strval($data['id_product']);
     $displaying_name = $conn->real_escape_string($data['displaying_name']);
     $name = $conn->real_escape_string($data['name']);
     $descr = $conn->real_escape_string($data['descr']);
@@ -62,6 +62,7 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     while($row = $result->fetch_assoc()) {
     $url = "http://" . $row['ip'] . "/update";
     $payload = json_encode([
+        "id_display"  => $row['id_display'],
         "id"          => $id,
         "name"        => $data['name'],
         "price"       => $data['price'],
@@ -83,10 +84,10 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
         $changes .= "Price: $price_old -> $price; ";
     }
     if($name_old != $name) {
-        $changes .= "Name: $name_old -> $name; ";
+        $changes .= "Product name: $name_old -> $name; ";
     }
     if($changes != "") {
-        $sql_insert = "INSERT INTO logs (id_log, admin_id, product_id, changed_at, what_changed) VALUES (NULL, $admin_id, $id, NULL, '$changes')";  
+        $sql_insert = "INSERT INTO logs (id_log, admin_id, product_id, changed_at, what_changed) VALUES (NULL, $admin_id, $id, NOW(), '$changes')";  
         $conn->query($sql_insert);
     }
 
@@ -104,7 +105,7 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     $price_old = $old['price'];
     $name_old = $old['name'];
     
-    $sql_insert = "INSERT INTO logs (id_log, admin_id, product_id, changed_at, what_changed) VALUES (NULL, $admin_id, $id, NULL, 'Deleted product $name_old with price: $price_old')";
+    $sql_insert = "INSERT INTO logs (id_log, admin_id, product_id, changed_at, what_changed) VALUES (NULL, $admin_id, $id, NOW(), 'Deleted product $name_old with price: $price_old')";
     $sql = "DELETE FROM products WHERE id_product = $id";
     try {
         $conn->query($sql_insert);

@@ -107,9 +107,7 @@ function renderDashboard(displays) {
       </div>
       <div class="device-info">
         <div class="device-info-row"><span>IP</span><span>${d.ip || '—'}</span></div>
-        <div class="device-info-row"><span>MAC</span><span>${d.mac}</span></div>
         <div class="device-info-row"><span>Product ID</span><span>${d.product_id ?? '—'}</span></div>
-        <div class="device-info-row"><span>Firmware</span><span>${d.fw_version}</span></div>
       </div>
     </div>
   `).join('');
@@ -156,10 +154,8 @@ function renderDisplaysTable(displays) {
     <tr>
       <td>#${d.id_display}</td>
       <td>${d.section}</td>
-      <td style="font-family:var(--font-mono);font-size:0.78rem;">${d.mac}</td>
       <td style="font-family:var(--font-mono);font-size:0.78rem;">${d.ip}</td>
       <td>${d.product_id ?? '—'}</td>
-      <td>${d.fw_version}</td>
       <td>
         <button class="btn-edit" onclick="editDisplay(${d.id_display})">Edit</button>
         <button class="btn-delete" onclick="deleteDisplay(${d.id_display})">Delete</button>
@@ -190,14 +186,13 @@ function renderProductsTable(products) {
 // Stubs — wire to PHP later
 async function addDisplay() {
     const section = document.getElementById('newSection').value;
-    const mac = document.getElementById('newMac').value;
     const ip = document.getElementById('newIp').value;
-    const fw_version = document.getElementById('newFwVersion').value;
 
     const res = await fetch(API.displays, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ section, mac, ip, fw_version, admin_id: getSession().id_admin })
+        body: JSON.stringify({ section, ip, admin_id: getSession().id_admin })
+
     });
     const data = await res.json();
     if (data.success) {
@@ -212,9 +207,7 @@ function editDisplay(id) {
     currentEditDisplayId = id;
     const d = cachedDisplays.find(x => x.id_display == id);
     document.getElementById('editSection').value = d.section;
-    document.getElementById('editMac').value = d.mac;
     document.getElementById('editIp').value = d.ip;
-    document.getElementById('editFwVersion').value = d.fw_version;
 
     const select = document.getElementById('editProductId');
     select.innerHTML = '<option value="">-- None --</option>';
@@ -227,15 +220,13 @@ function editDisplay(id) {
 
 async function saveEditDisplay() {
     const section = document.getElementById('editSection').value;
-    const mac = document.getElementById('editMac').value;
     const ip = document.getElementById('editIp').value;
-    const fw_version = document.getElementById('editFwVersion').value;
     const product_id = document.getElementById('editProductId').value;
 
     const res = await fetch(API.displays, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_display: currentEditDisplayId, section, mac, ip, fw_version, product_id, admin_id: getSession().id_admin })
+        body: JSON.stringify({ id_display: currentEditDisplayId, section, ip, product_id, admin_id: getSession().id_admin })
     });
     const data = await res.json();
     if (data.success) {

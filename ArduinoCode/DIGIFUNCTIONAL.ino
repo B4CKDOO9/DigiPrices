@@ -11,7 +11,7 @@
     - TFT_eSPI
     - ESP32 core WiFi + HTTPClient
     - ArduinoJson (recommended)
-  Required driver files:
+  Required driver files:x
     - AXS15231B.h/.cpp providing:
         axs15231_init()
         lcd_fill()
@@ -31,6 +31,7 @@
 #include <Preferences.h>
 
 Preferences prefs;
+Preferences prod;
 // -------- ArduinoJson (recommended) --------
 
 // ===================== Web Initilaization ==================
@@ -57,6 +58,7 @@ TFT_eSPI tft = TFT_eSPI();
 TFT_eSprite sprite = TFT_eSprite(&tft);
 
 // ===================== JSON KEYS (adjust to your PHP output) =====================
+static const char *JSON_ID_DISPLAY = "id_display";
 static const char *JSON_ID = "id";
 static const char *JSON_NAME = "name";
 static const char *JSON_PRICE = "price";
@@ -67,6 +69,7 @@ static const char *JSON_UPDATED = "updated";
 // ===================== Data model =====================
 struct ProductData
 {
+  String id_display;
   String id;
   String name;
   String price;      // "8.99"
@@ -144,6 +147,7 @@ static bool parseProductJson(const String &payload, ProductData &out)
     return false;
 
   // If your PHP returns an array, adapt here. This assumes a single object.
+  out.id_display = doc[JSON_ID_DISPLAY] | "";
   out.id = doc[JSON_ID] | "";
   out.name = doc[JSON_NAME] | "";
   out.price = doc[JSON_PRICE] | "";
@@ -343,7 +347,7 @@ static void drawPriceTag(const ProductData &p)
   sprite.drawString(p.name, 20, 12, 4);
 
   // ID aligned right on same baseline-ish
-  String idText = "ID: " + p.id;
+  String idText = "IDP: " + p.id + " | IDD:" + p.id_display; 
   int idW = sprite.textWidth(idText, 4);
   sprite.drawString(idText, W - 20 - idW, 12, 4);
 
@@ -403,8 +407,10 @@ static void backlightOn()
 
 void handleUpdate()
 {
+
   String body = server.arg("plain");
   ProductData incoming;
+  Serial.println("Received: " + body);
 
   if (!parseProductJson(body, incoming))
   {
@@ -422,13 +428,22 @@ void handleUpdate()
   g_lastHash = h;
   g_current = incoming;
 
+  prod.begin("product", false);
+  prod.putString("id", g_current.id);
+  prod.putString("id_display", g_current.id_display);
+  prod.putString("name", g_current.name);
+  prod.putString("price", g_current.price);
+  prod.putString("pricePerKg", g_current.pricePerKg);
+  prod.putString("barcode", g_current.barcode);
+  prod.putString("updated", g_current.updated);
+  prod.end();
+  drawPriceTag(g_current);
+
   if (!g_hasDrawnOnce)
   {
     backlightOn();
     g_hasDrawnOnce = true;
   }
-
-  drawPriceTag(g_current);
   server.send(200, "application/json", "{\"success\":true}");
 }
 
@@ -436,10 +451,12 @@ static void handleSave()
 {
   String ssid = server.arg("ssid");
   String pass = server.arg("pass");
+  String serverip = server.arg("serverip");
 
   prefs.begin("WiFi", false);
   prefs.putString("ssid", ssid);
   prefs.putString("pass", pass);
+  prefs.putString("serverip",serverip);
   prefs.end();
   drawConnectingScreen();
   bool connected = wifiEnsureConnected(ssid, pass, 8000);
@@ -497,6 +514,8 @@ void handlePortal()
       <input type="text" name="ssid" placeholder="Enter WiFi name" style="width:100%; padding:0.65rem; margin:0.4rem 0 1rem 0; background:#1a001f; border:1px solid #5a1a65; border-radius:7px; color:#f5e6f5; font-size:0.9rem; outline:none; box-sizing:border-box;">
       <label style="color:#a06aaa; font-size:0.82rem;">Password</label>
       <input type="password" name="pass" placeholder="Enter WiFi password" style="width:100%; padding:0.65rem; margin:0.4rem 0 1.5rem 0; background:#1a001f; border:1px solid #5a1a65; border-radius:7px; color:#f5e6f5; font-size:0.9rem; outline:none; box-sizing:border-box;">
+      <label style="color:#a06aaa; font-size:0.82rem;">Server</label>
+      <input type="text" name="serverip" placeholder="192.168.1.x" style="width:100%; padding:0.65rem; margin:0.4rem 0 1.5rem 0; background:#1a001f; border:1px solid #5a1a65; border-radius:7px; color:#f5e6f5; font-size:0.9rem; outline:none; box-sizing:border-box;">
       <input type="submit" value="Connect" style="width:100%; padding:0.75rem; background:#ec8eec; color:#fff; border:none; border-radius:7px; font-size:0.9rem; font-weight:600; cursor:pointer;">
     </form>
   </div>
@@ -526,12 +545,28 @@ static void handlePortalError()
       <input type="text" name="ssid" placeholder="Enter WiFi name" style="width:100%; padding:0.65rem; margin:0.4rem 0 1rem 0; background:#1a001f; border:1px solid #5a1a65; border-radius:7px; color:#f5e6f5; font-size:0.9rem; outline:none; box-sizing:border-box;">
       <label style="color:#a06aaa; font-size:0.82rem;">Password</label>
       <input type="password" name="pass" placeholder="Enter WiFi password" style="width:100%; padding:0.65rem; margin:0.4rem 0 1.5rem 0; background:#1a001f; border:1px solid #5a1a65; border-radius:7px; color:#f5e6f5; font-size:0.9rem; outline:none; box-sizing:border-box;">
+      <label style="color:#a06aaa; font-size:0.82rem;">Server</label>
+      <input type="text" name="serverip" placeholder="192.168.1.x" style="width:100%; padding:0.65rem; margin:0.4rem 0 1.5rem 0; background:#1a001f; border:1px solid #5a1a65; border-radius:7px; color:#f5e6f5; font-size:0.9rem; outline:none; box-sizing:border-box;">
       <input type="submit" value="Connect" style="width:100%; padding:0.75rem; background:#ec8eec; color:#fff; border:none; border-radius:7px; font-size:0.9rem; font-weight:600; cursor:pointer;">
     </form>
   </div>
 </body>
 </html>
   )");
+}
+
+static void registerWithServer(String serverip)
+{
+  String url = "http://" + serverip + "/DigiPrices/api/register.php"; //REMEBER TO REMOVE HARDOCED LINK!!!!
+  String payload = "{\"ip\":\"" + WiFi.localIP().toString() + "\"}";
+  HTTPClient http;
+  http.begin(url);
+  http.addHeader("Content-Type","application/json");
+  int http_code = http.POST(payload);
+  http.end();
+  Serial.println("Server IP: " + serverip);
+  Serial.println("URL: " + url);
+  Serial.println("Registration response: " + String(http_code));
 }
 
 void drawIpScreen()
@@ -575,6 +610,7 @@ void setup()
   // prefs.clear(); //for clearing the stored password and ssid
   String ssid = prefs.getString("ssid", "");
   String pass = prefs.getString("pass", "");
+  String serverip = prefs.getString("serverip","");
   prefs.end();
 
   if (ssid == "")
@@ -609,10 +645,32 @@ void setup()
     }
     else
     {
+
+      prod.begin("product", true);
+      String savedName = prod.getString("name", "");
+      if(savedName != "") 
+      {
+        ProductData saved;
+        saved.id = prod.getString("id","");
+        saved.id_display = prod.getString("id_display","");
+        saved.name = prod.getString("name","");
+        saved.price = prod.getString("price","");
+        saved.pricePerKg = prod.getString("pricePerKg","");
+        saved.barcode = prod.getString("barcode","");
+        saved.updated = prod.getString("updated","");
+        prod.end();
+        drawPriceTag(saved);
+      } 
+      else
+      {
+        prod.end();
+        drawIpScreen();
+      }
+
       WiFi.softAPdisconnect(true);
+      registerWithServer(serverip);
       Serial.print("[WiFi] Connected! IP: ");
       Serial.println(WiFi.localIP());
-      drawIpScreen();
       server.on("/update", HTTP_POST, handleUpdate);
       server.begin();
       Serial.println("[BOOT] Ready (waiting for updates)");
@@ -635,6 +693,9 @@ void loop()
       prefs.begin("WiFi", false);
       prefs.clear();
       prefs.end();
+      prod.begin("product", false);
+      prod.clear();
+      prod.end();
       ESP.restart();
     }
   }
