@@ -82,6 +82,8 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     $changes = "";
     if($price_old != $price) {
         $changes .= "Price: $price_old -> $price; ";
+        $sql = "INSERT INTO price_history (id_history, product_id, price, changed_at) VALUES (NULL, $id, $price_old, NOW())";
+        $conn->query($sql);
     }
     if($name_old != $name) {
         $changes .= "Product name: $name_old -> $name; ";
