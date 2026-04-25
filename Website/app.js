@@ -172,11 +172,10 @@ function renderProductsTable(products) {
       <td>${p.displaying_name}</td>
       <td>${p.name}</td>
       <td style="font-family:var(--font-mono);">${p.price} ${p.currency_code}</td>
-      <td>${p.currency_code}</td>
       <td style="font-family:var(--font-mono);font-size:0.78rem;">${p.barcode}</td>
-      <td style="font-size:0.8rem;color:var(--text-muted);">${p.last_price_change}</td>
+      <td style="font-size:0.8rem;color:var(--text-muted);">${formatDate(p.last_price_change)}</td>
       <td>${p.discount_per ? p.discount_per + '%' : '—'}</td>
-      <td>${p.discount_end ? p.discount_end : '—'}</td>
+      <td>${formatDate(p.discount_end)}</td>
       <td>
         <button class="btn-edit" onclick="editProduct(${p.id_product})">Edit</button>
         <button class="btn-delete" onclick="deleteProduct(${p.id_product})">Delete</button>
@@ -405,6 +404,18 @@ function filterLogs() {
 
 function openModal(id) { document.getElementById(id).style.display = 'flex'; }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+function formatDate(dateStr) {
+    if(!dateStr) return '—';
+    const d = new Date(dateStr);
+    // build dd/mm/yyyy HH:mm from the Date object
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const HH = String(d.getHours()).padStart(2, '0');
+    const MM = String(d.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy} ${HH}:${MM}`;
+}
 
 // Close modal on overlay click
 document.querySelectorAll('.modal-overlay').forEach(overlay => {

@@ -507,6 +507,16 @@ select option {
     color: var(--text);
 }
 
+.modal::-webkit-scrollbar {
+    width: 6px;
+}
+.modal::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+.modal::-webkit-scrollbar-track {
+    background: transparent;
+}
 
 /* ===== FILTER ROW ===== */
 .filter-row input {
