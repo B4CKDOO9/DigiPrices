@@ -36,7 +36,7 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
 } else if($_SERVER['REQUEST_METHOD'] === 'PUT') {
-    $id = strval($data['id_product']);
+    $id = intval($data['id_product']);
     $displaying_name = $conn->real_escape_string($data['displaying_name']);
     $name = $conn->real_escape_string($data['name']);
     $descr = $conn->real_escape_string($data['descr']);
@@ -44,6 +44,8 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     $price_per_kg = floatval($data['price_per_kg']);
     $currency_code = $conn->real_escape_string($data['currency_code']);
     $barcode = $conn->real_escape_string($data['barcode']);
+    $discount_per = floatval($data['discount_per']);
+    $discount_end = $conn->real_escape_string($data['discount_end']);
     $admin_id = $conn->real_escape_string($data['admin_id']);
 
     $old = $conn->query("SELECT * FROM products WHERE id_product = $id")->fetch_assoc();
@@ -52,7 +54,7 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $sql = "UPDATE products SET displaying_name='$displaying_name', name='$name', descr='$descr', 
             price=$price, price_per_kg=$price_per_kg, currency_code='$currency_code', barcode='$barcode', 
-            last_price_change=NOW() WHERE id_product=$id";
+            discount_per=$discount_per, discount_end='$discount_end', last_price_change=NOW() WHERE id_product=$id";
     try {
 
     $conn->query($sql);
@@ -60,6 +62,11 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     $result = $conn->query($sql);
     
     while($row = $result->fetch_assoc()) {
+    if(!empty($data['discount_per']) && $data['discount_end'] > date('Y-m-d H:i:s')) {
+        $discount_price = $data['price'] * (1 - $data['discount_per'] / 100);
+    } else {
+        $discount_price = null;
+    }
     $url = "http://" . $row['ip'] . "/update";
     $payload = json_encode([
         "id_display"  => $row['id_display'],
@@ -69,6 +76,8 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
         "price_per_kg"=> $data['price_per_kg'],
         "barcode"     => $data['barcode'],
         "updated"     => date('Y-m-d H:i:s'),
+        "discount_per"=> $data['discount_per'],
+        "discount_price"=> $discount_price,
     ]);
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_POST, true);

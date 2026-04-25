@@ -289,6 +289,8 @@ function editProduct(id) {
         document.getElementById('editPricePerKg').value = p.price_per_kg || '';
         document.getElementById('editCurrencyCode').value = p.currency_code;
         document.getElementById('editBarcode').value = p.barcode;
+        document.getElementById('editDiscount').value = p.discount_per || '';
+        document.getElementById('editDiscountExpiry').value = p.discount_end || '';
         openModal('editProductModal');
     });
 }
@@ -306,6 +308,8 @@ async function saveEditProduct() {
             price_per_kg: document.getElementById('editPricePerKg').value,
             currency_code: document.getElementById('editCurrencyCode').value,
             barcode: document.getElementById('editBarcode').value,
+            discount_per: document.getElementById('editDiscount').value,
+            discount_end: document.getElementById('editDiscountExpiry').value,
             admin_id: getSession().id_admin
         })
     });

@@ -81,7 +81,11 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
             $sql = "SELECT * FROM products WHERE id_product = $product_id";
             $result = $conn->query($sql);
             $product = $result->fetch_assoc();
-            
+            if(!empty($product['discount_per']) && $product['discount_end'] > date('Y-m-d H:i:s')) {
+                $discount_price = $product['price'] * (1 - $product['discount_per'] / 100);
+            } else {
+                $discount_price = null;
+            }
             $url = "http://" . $ip . "/update";
             $payload = json_encode([
                 "id_display"  => $id,
@@ -91,6 +95,8 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
                 "price_per_kg"=> $product['price_per_kg'],
                 "barcode"     => $product['barcode'],
                 "updated"     => $product['last_price_change'],
+                "discount_per"=> $product['discount_per'],
+                "discount_price"=> $discount_price,
                 ]);
             error_log("Sending payload: " . $payload);
             $ch = curl_init($url);                    // create curl request to $url
