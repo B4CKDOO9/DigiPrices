@@ -83,12 +83,16 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
             $product = $result->fetch_assoc();
             if(!empty($product['discount_per']) && $product['discount_end'] > date('Y-m-d H:i:s')) {
                 $discount_price = $product['price'] * (1 - $product['discount_per'] / 100);
+                $sql = "SELECT MIN(price) AS lowest_price FROM price_history WHERE product_id = $product_id AND changed_at >= NOW() - INTERVAL 30 DAY";
+                $lowest_price = $conn->query($sql)->fetch_assoc();
+                $min_price = $lowest_price['lowest_price'] ?? $product['price'];
             } else {
                 $discount_price = null;
+                $min_price = null;
             }
             $url = "http://" . $ip . "/update";
             $payload = json_encode([
-                "id_display"  => $id,
+                "id_display"  => strval($id),
                 "id"          => $product['id_product'],
                 "name"        => $product['name'],
                 "price"       => $product['price'],
@@ -96,7 +100,8 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
                 "barcode"     => $product['barcode'],
                 "updated"     => $product['last_price_change'],
                 "discount_per"=> $product['discount_per'],
-                "discount_price"=> $discount_price,
+                "discount_price"=> strval($discount_price),
+                "lowest_price"=> strval($min_price),
                 ]);
             error_log("Sending payload: " . $payload);
             $ch = curl_init($url);                    // create curl request to $url
