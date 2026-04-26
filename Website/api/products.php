@@ -83,6 +83,7 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
         "discount_per"=> $data['discount_per'],
         "discount_price"=> strval($discount_price),
         "lowest_price"=> strval($min_price),
+        "discount_end"=> $data['discount_end'],
     ]);
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_POST, true);

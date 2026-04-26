@@ -65,6 +65,10 @@ static const char *JSON_PRICE = "price";
 static const char *JSON_PRICE_KG = "price_per_kg";
 static const char *JSON_BARCODE = "barcode";
 static const char *JSON_UPDATED = "updated";
+static const char *JSON_DISCOUNT_PER = "discount_per";
+static const char *JSON_DISCOUNT_PRICE = "discount_price";
+static const char *JSON_LOWEST_PRICE = "lowest_price";
+static const char *JSON_DISCOUNT_END = "discount_end";
 
 // ===================== Data model =====================
 struct ProductData
@@ -76,6 +80,10 @@ struct ProductData
   String pricePerKg; // "2.49"
   String barcode;    // 13 digits
   String updated;    // timestamp string
+  String discount_per;
+  String discount_price;
+  String lowest_price;
+  String discount_end;
 };
 
 static ProductData g_current;
@@ -154,6 +162,10 @@ static bool parseProductJson(const String &payload, ProductData &out)
   out.pricePerKg = doc[JSON_PRICE_KG] | "";
   out.barcode = doc[JSON_BARCODE] | "";
   out.updated = doc[JSON_UPDATED] | "";
+  out.discount_per = doc[JSON_DISCOUNT_PER] | "";
+  out.discount_price = doc[JSON_DISCOUNT_PRICE] | "";
+  out.lowest_price = doc[JSON_LOWEST_PRICE] | "";
+  out.discount_end = doc[JSON_DISCOUNT_END] | "";
 
   // Basic sanity
   if (out.name.length() == 0)
@@ -248,93 +260,67 @@ static String normalizeEan13(String digits)
   // Anything else: return empty => draw placeholder
   return "";
 }
-
-static void drawEan13Barcode(int x, int y, int w, int h, const String &rawDigits)
+static void drawEan13BarcodeHorizontal(int x, int y, int w, int h, const String &rawDigits)
 {
-  // White label background
-  sprite.fillRect(x, y, w, h + 22, TFT_WHITE);
-
   String digits = normalizeEan13(rawDigits);
   if (digits.length() != 13)
   {
-    sprite.setTextColor(TFT_BLACK, TFT_WHITE);
-    sprite.drawString("INVALID BARCODE", x + 10, y + 10, 2);
+    sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+    sprite.drawString("INVALID", x + 4, y + 10, 1);
     return;
   }
 
-  // Build the full bit pattern:
-  // Start guard: 101
-  // Left 6 digits: 42 bits
-  // Center guard: 01010
-  // Right 6 digits: 42 bits
-  // End guard: 101
-  // Total modules: 3 + 42 + 5 + 42 + 3 = 95
-
   String bits;
   bits.reserve(95);
-
   bits += "101";
 
   int first = digits[0] - '0';
   const char *parity = PARITY[first];
 
-  // Left side digits 1..6 => digits[1]..digits[6]
   for (int i = 0; i < 6; i++)
   {
     int d = digits[1 + i] - '0';
-    if (parity[i] == 'L')
-      bits += L_CODE[d];
-    else
-      bits += G_CODE[d];
+    if (parity[i] == 'L') bits += L_CODE[d];
+    else bits += G_CODE[d];
   }
-
   bits += "01010";
-
-  // Right side digits 7..12 => digits[7]..digits[12]
   for (int i = 0; i < 6; i++)
   {
     int d = digits[7 + i] - '0';
     bits += R_CODE[d];
   }
-
   bits += "101";
 
-  // Render bars
   const int modules = 95;
-  // Fit modules into available width
-  int moduleW = w / modules;
-  if (moduleW < 1)
-    moduleW = 1;
+  int barW = w - 16;
+  int guardW = w - 10;
 
-  int barWTotal = moduleW * modules;
-  int x0 = x + (w - barWTotal) / 2;
-
-  // Bar heights: guards slightly taller
-  int barH = h;
-  int guardH = h + 6;
-
-  // Draw bars (black on white)
   for (int i = 0; i < modules; i++)
   {
     bool isBar = (bits[i] == '1');
-    if (!isBar)
-      continue;
+    if (!isBar) continue;
 
     bool isGuard =
-        (i < 3) ||             // start guard
-        (i >= 45 && i < 50) || // center guard
-        (i >= 92);             // end guard
+        (i < 3) ||
+        (i >= 45 && i < 50) ||
+        (i >= 92);
 
-    int hh = isGuard ? guardH : barH;
-    sprite.fillRect(x0 + i * moduleW, y, moduleW, hh, TFT_BLACK);
+    int ww = isGuard ? guardW : barW;
+    int barY = y + (i * h) / modules;
+    int barH = ((i + 1) * h) / modules - (i * h) / modules;
+    sprite.fillRect(x, barY, ww, barH, TFT_WHITE);
   }
 
-  // Digits below barcode
-  sprite.setTextColor(TFT_BLACK, TFT_WHITE);
-
-  // EAN-13 standard layout: first digit left, then 6 digits, then 6 digits
-  // We’ll print as full string centered (simple + readable)
-  sprite.drawString(digits, x + 10, y + h + 6, 2);
+  // Digits vertical — spaced evenly
+  // Create tiny sprite for rotated text
+   sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+  int digitX = x + w - 10;
+  for (int i = 0; i < 13; i++)
+  {
+    int digitY = y + (i * h) / 14 + 4;
+    String ch = digits.substring(i, i + 1);
+    sprite.drawString(ch, digitX, digitY, 1);
+  }
 }
 
 // ===================== UI drawing =====================
@@ -344,53 +330,70 @@ static void drawPriceTag(const ProductData &p)
 
   // --- Header row ---
   sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-  sprite.drawString(p.name, 20, 12, 4);
+  sprite.drawString(p.name, 20, 8, 4);
 
-  // ID aligned right on same baseline-ish
-  String idText = "IDP: " + p.id + " | IDD:" + p.id_display; 
-  int idW = sprite.textWidth(idText, 4);
-  sprite.drawString(idText, W - 20 - idW, 12, 4);
+  // IDD/IDP small, top right of left section
+  sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
+  String idText = "IDP:" + p.id + " IDD:" + p.id_display;
+  int idW = sprite.textWidth(idText, 2);
+  sprite.drawString(idText, 520 - idW, 8, 2);
 
-  sprite.drawFastHLine(20, 46, W - 40, TFT_DARKGREY);
+  sprite.drawFastHLine(20, 32 , 516, TFT_DARKGREY);
 
-  // --- Big price (no font 7) ---
-  // Use font 6 for larger digits; if it looks too big/small, switch to 4.
-  // Ensure dot is visible in this font.
-  sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+  // --- Right side: Horizontal barcode ---
+  drawEan13BarcodeHorizontal(556, 0, 84, 180, p.barcode);
 
-  // Price text (e.g., "8.99")
-  int px = 20;
-  int py = 58;
-  sprite.drawString(p.price, px, py, 6);
+  // Last update below barcode
+  sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
+  sprite.drawString("Updated: " + p.updated, 20, 164, 1);
 
-  // "EUR" placed immediately after price based on rendered width
-  int priceW = sprite.textWidth(p.price, 6);
-  sprite.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
-  sprite.drawString("EUR", px + priceW + 12, py + 18, 4);
+  // --- Left side: Price area ---
+  if(p.discount_price.length() > 0)
+  {
+    // Old price crossed out
+    sprite.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+    sprite.drawString(p.price + " EUR", 20, 36, 4);
+    int oldW = sprite.textWidth(p.price + " EUR", 4);
+    sprite.drawFastHLine(20, 36 + 13, oldW, TFT_RED);
 
-  // --- Cijena/kg block moved right ---
-  sprite.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
-  sprite.drawString("Cijena/kg:", 460, 58, 4);
-  sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+    // Discount percentage
+    sprite.setTextColor(TFT_RED, TFT_BLACK);
+    sprite.drawString("-" + p.discount_per + "%", 20 + oldW + 12, 36, 4);
 
-  String perKg = p.pricePerKg + " EUR/kg";
-  sprite.drawString(perKg, 460, 90, 4);
+    // Big discounted price
+    sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+    sprite.drawString(p.discount_price, 20, 68, 6);
+    int newW = sprite.textWidth(p.discount_price, 6);
+    sprite.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+    sprite.drawString("EUR", 20 + newW + 10, 86, 4);
 
-  // --- Barcode area ---
-  // Tuned box; adjust if you want more/less room
-  const int bx = 20, by = 122, bw = 420, bh = 38;
-  drawEan13Barcode(bx, by, bw, bh, p.barcode);
+    // Lowest 30d price
+    sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
+    sprite.drawString("Lowest 30D: " + p.lowest_price + " EUR", 20, 115, 2);
 
-  // --- Last update ---
-  sprite.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
-  sprite.drawString("Zadnje azuriranje:", 460, 126, 2);
-  sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-  sprite.drawString(p.updated, 460, 146, 2);
+    sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
+    sprite.drawString("Discount ends: " + p.discount_end, 20, 130, 2 );
+    // Price per kg
+    sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
+    sprite.drawString("Price/kg: " + p.pricePerKg + " EUR/kg", 20, 145, 2);
+  }
+  else
+  {
+    // Normal price - big
+    sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+    sprite.drawString(p.price, 20, 50, 6);
+    int priceW = sprite.textWidth(p.price, 6);
+    sprite.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+    sprite.drawString("EUR", 20 + priceW + 12, 68, 4);
 
-  // Push to LCD in landscape (rotated 90)
+    // Price per kg
+    sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
+    sprite.drawString("Price/kg: " + p.pricePerKg + " EUR/kg", 20, 100, 2);
+  }
+
+  // Push to LCD
   lcd_PushColors_rotated_90(0, 0, W, H, (uint16_t *)sprite.getPointer());
 }
-
 // ===================== Boot / panel =====================
 static void panelBlankAndBacklightOff()
 {
@@ -436,6 +439,10 @@ void handleUpdate()
   prod.putString("pricePerKg", g_current.pricePerKg);
   prod.putString("barcode", g_current.barcode);
   prod.putString("updated", g_current.updated);
+  prod.putString("discount_per",g_current.discount_per);
+  prod.putString("discount_price",g_current.discount_price);
+  prod.putString("lowest_price",g_current.lowest_price);
+  prod.putString("discount_end",g_current.discount_end);
   prod.end();
   drawPriceTag(g_current);
 
@@ -658,6 +665,10 @@ void setup()
         saved.pricePerKg = prod.getString("pricePerKg","");
         saved.barcode = prod.getString("barcode","");
         saved.updated = prod.getString("updated","");
+        saved.discount_per = prod.getString("discount_per","");
+        saved.discount_price = prod.getString("discount_price","");
+        saved.lowest_price = prod.getString("lowest_price","");
+        saved.discount_end = prod.getString("discount_end","");
         prod.end();
         drawPriceTag(saved);
       } 
