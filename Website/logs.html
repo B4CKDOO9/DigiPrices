@@ -26,17 +26,18 @@
     </nav>
 
     <main class="main-content">
-        <div class="page-header">
-            <h2>Activity Logs</h2>
-            <div class="filter-row">
-                <input type="text" id="logSearch" placeholder="Search logs..." oninput="filterLogs()" />
-            </div>
-            <select id="logAdminFilter" onchange="filterLogs()">
-                <option value="">All Admins</option>
-            </select>
-            <input type="date" id="logDateFrom" onchange="filterLogs()" />
-            <input type="date" id="logDateTo" onchange="filterLogs()" />
-        </div>
+    <div class="page-header">
+        <h2>Activity Logs</h2>
+    </div>
+    
+    <div class="filter-row">
+        <input type="text" id="logSearch" placeholder="Search logs..." oninput="filterLogs()" />
+        <select id="logAdminFilter" onchange="filterLogs()">
+            <option value="">All Admins</option>
+        </select>
+        <input type="date" id="logDateFrom" onchange="filterLogs()" />
+        <input type="date" id="logDateTo" onchange="filterLogs()" />
+    </div>
 
         <div class="table-wrapper">
             <table class="data-table" id="logsTable">

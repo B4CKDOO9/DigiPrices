@@ -637,6 +637,34 @@ input:disabled {
     opacity: 1;
 }
 
+.filter-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.filter-row input,
+.filter-row select {
+    width: auto;
+    min-width: 160px;
+}
+
+.filter-row input[type="date"] {
+    min-width: 140px;
+    padding: 0.55rem 0.75rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+}
+
+.filter-row select {
+    min-width: 150px;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
     .stats-row {

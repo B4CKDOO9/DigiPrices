@@ -11,6 +11,7 @@ const API = {
     displays: 'api/displays.php',
     products: 'api/products.php',
     logs: 'api/logs.php',
+    admins: 'api/admins.php',
 };
 
 // ============================================================
@@ -75,20 +76,13 @@ async function loadDashboard() {
         document.getElementById('navUsername').textContent = user?.name || user?.username || 'Admin';
     }
 
-    const res = await fetch(API.displays);
-    const displays = await res.json();
-
-    // PLACEHOLDER DATA — remove when PHP is ready
-    //const displays = [
-    //    { id_display: 1, section: 'Aisle 1', mac: 'AA:BB:CC:DD:EE:01', ip: '192.168.1.101', product_id: 3, fw_version: 'v1.2.0' },
-    //    { id_display: 2, section: 'Aisle 2', mac: 'AA:BB:CC:DD:EE:02', ip: '192.168.1.102', product_id: 5, fw_version: 'v1.2.0' },
-    //    { id_display: 3, section: 'Checkout', mac: 'AA:BB:CC:DD:EE:03', ip: '192.168.1.103', product_id: null, fw_version: 'v1.1.8' },
-    // ];
-
-    renderDashboard(displays);
+    const [dRes, pRes] = await Promise.all([fetch(API.displays), fetch(API.products)]);
+    const displays = await dRes.json();
+    const products = await pRes.json();
+    renderDashboard(displays, products);
 }
 
-function renderDashboard(displays) {
+function renderDashboard(displays, products) {
     const grid = document.getElementById('devicesGrid');
     const online = displays.filter(d => d.ip).length; // placeholder logic
     const offline = displays.length - online;
@@ -99,7 +93,9 @@ function renderDashboard(displays) {
     document.getElementById('statProducts').textContent = displays.filter(d => d.product_id).length;
     document.getElementById('deviceCount').textContent = `${displays.length} devices`;
 
-    grid.innerHTML = displays.map(d => `
+    grid.innerHTML = displays.map(d => {
+    const product = products.find(p => p.id_product == d.product_id);
+    return `
     <div class="device-card">
       <div class="device-card-header">
         <span class="device-name">${d.section}</span>
@@ -107,10 +103,10 @@ function renderDashboard(displays) {
       </div>
       <div class="device-info">
         <div class="device-info-row"><span>IP</span><span>${d.ip || '—'}</span></div>
-        <div class="device-info-row"><span>Product ID</span><span>${d.product_id ?? '—'}</span></div>
+        <div class="device-info-row"><span>Product</span><span>${product ? product.name + ' (#' + d.product_id + ')' : '—'}</span></div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+}).join('');
 }
 
 // ============================================================
@@ -154,7 +150,7 @@ function renderDisplaysTable(displays) {
     <tr>
       <td>#${d.id_display}</td>
             <td class="editable" tabindex="0" title="Click or press Enter to edit" onclick="makeDisplayEditable(this, ${d.id_display}, 'section')" onkeydown="handleDisplayEditableCellKeydown(event, this, ${d.id_display}, 'section')">${d.section}</td>
-            <td class="editable" tabindex="0" title="Click or press Enter to edit" onclick="makeDisplayEditable(this, ${d.id_display}, 'ip')" onkeydown="handleDisplayEditableCellKeydown(event, this, ${d.id_display}, 'ip')">${d.ip}</td>
+            <td class="editable" tabindex="0" title="Click or press Enter to edit" onclick="makeDisplayEditable(this, ${d.id_display}, 'ip')" onkeydown="handleDisplayEditableCellKeydown(event, this, ${d.id_display}, 'ip')">${d.ip || '—'}</td>
             <td class="editable" tabindex="0" title="Click or press Enter to select product" onclick="makeProductDropdown(this, ${d.id_display})" onkeydown="handleDisplayProductDropdownKeydown(event, this, ${d.id_display})">${d.product_id ?? '—'}</td>
       <td>
         <button class="btn-edit" onclick="editDisplay(${d.id_display})">Edit</button>
@@ -166,13 +162,18 @@ function renderDisplaysTable(displays) {
 
 function renderProductsTable(products) {
     const tbody = document.getElementById('productsBody');
-    tbody.innerHTML = products.map(p => `
+    tbody.innerHTML = products.map(p => {
+        const pricePerUnit = (p.price_per_kg && p.price_per_kg !== '0.00')
+            ? `${p.price_per_kg}/${p.unit || 'KOM'}`
+            : '—';
+        return `
     <tr>
       <td>#${p.id_product}</td>
-    <td class="editable" tabindex="0" title="Click or press Enter to edit" onclick="makeEditable(this, ${p.id_product}, 'name')" onkeydown="handleEditableCellKeydown(event, this, ${p.id_product}, 'name')">${p.name}</td>
-    <td class="editable" tabindex="0" title="Click or press Enter to edit" onclick="makeEditable(this, ${p.id_product}, 'price')" onkeydown="handleEditableCellKeydown(event, this, ${p.id_product}, 'price')" style="font-family:var(--font-mono);">${p.price}</td>
+      <td class="editable" tabindex="0" title="Click or press Enter to edit" onclick="makeEditable(this, ${p.id_product}, 'name')" onkeydown="handleEditableCellKeydown(event, this, ${p.id_product}, 'name')">${p.name}</td>
+      <td class="editable" tabindex="0" title="Click or press Enter to edit" onclick="makeEditable(this, ${p.id_product}, 'price')" onkeydown="handleEditableCellKeydown(event, this, ${p.id_product}, 'price')" style="font-family:var(--font-mono);">${p.price}</td>
+      <td style="font-family:var(--font-mono);font-size:0.85rem;">${pricePerUnit}</td>
       <td>${p.currency_code}</td>
-    <td class="editable" tabindex="0" title="Click or press Enter to edit" onclick="makeEditable(this, ${p.id_product}, 'barcode')" onkeydown="handleEditableCellKeydown(event, this, ${p.id_product}, 'barcode')" style="font-family:var(--font-mono);font-size:0.78rem;">${p.barcode}</td>
+      <td class="editable" tabindex="0" title="Click or press Enter to edit" onclick="makeEditable(this, ${p.id_product}, 'barcode')" onkeydown="handleEditableCellKeydown(event, this, ${p.id_product}, 'barcode')" style="font-family:var(--font-mono);font-size:0.78rem;">${p.barcode}</td>
       <td style="font-size:0.8rem;color:var(--text-muted);">${formatDate(p.last_price_change)}</td>
       <td>${(p.discount_per && p.discount_per !== "0.00") ? p.discount_per + '%' : '—'}</td>
       <td>${formatDate(p.discount_end)}</td>
@@ -180,8 +181,8 @@ function renderProductsTable(products) {
         <button class="btn-edit" onclick="editProduct(${p.id_product})">Edit</button>
         <button class="btn-delete" onclick="deleteProduct(${p.id_product})">Delete</button>
       </td>
-    </tr>
-  `).join('');
+    </tr>`;
+    }).join('');
 }
 
 // Stubs — wire to PHP later
@@ -208,7 +209,7 @@ function editDisplay(id) {
     currentEditDisplayId = id;
     const d = cachedDisplays.find(x => x.id_display == id);
     document.getElementById('editSection').value = d.section;
-    document.getElementById('editIp').value = d.ip;
+    document.getElementById('editIp').value = d.ip ?? '';
 
     const select = document.getElementById('editProductId');
     select.innerHTML = '<option value="">-- None --</option>';
@@ -257,7 +258,8 @@ let currentEditProductId = null;
 
 async function addProduct() {
     const price = Number(document.getElementById('newPrice').value);
-    const pricePerKg = Number(document.getElementById('newPricePerKg').value);
+    const quantity = Number(document.getElementById('newQuantity').value);
+    const unit = document.getElementById('newUnit').value;
     const name = document.getElementById('newName').value.trim();
     const barcode = document.getElementById('newBarcode').value.trim();
     if (!name) {
@@ -268,25 +270,20 @@ async function addProduct() {
         alert('Please enter a valid price.');
         return;
     }
-    if (pricePerKg && (!Number.isFinite(pricePerKg) || pricePerKg < 0)) {
-        alert('Please enter a valid non-negative number for price per kg.');
-        return;
-    }
     if (barcode && !/^\d{13}$/.test(barcode)) {
         alert('Please enter a valid 13-digit barcode.');
         return;
     }
-    //const normalizedPrice = price.toFixed(2);
     const res = await fetch(API.products, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            name: document.getElementById('newName').value,
-            descr: document.getElementById('newDescr').value,
-            price: document.getElementById('newPrice').value,
-            price_per_kg: document.getElementById('newPricePerKg').value,
+            name,
+            price,
+            unit,
+            quantity: quantity > 0 ? quantity : null,
             currency_code: document.getElementById('newCurrencyCode').value,
-            barcode: document.getElementById('newBarcode').value,
+            barcode,
             admin_id: getSession().id_admin,
         })
     });
@@ -304,10 +301,11 @@ function editProduct(id) {
         const p = data.find(x => x.id_product == id);
         currentEditProductId = id;
         document.getElementById('editName').value = p.name;
-        document.getElementById('editDescr').value = p.descr || '';
         document.getElementById('editPrice').value = p.price;
-        document.getElementById('editPricePerKg').value = p.price_per_kg || '';
+        document.getElementById('editUnit').value = p.unit || 'KOM';
+        document.getElementById('editQuantity').value = p.quantity || '';
         document.getElementById('editCurrencyCode').value = p.currency_code;
+        updateUnitLabels('edit');
         document.getElementById('editBarcode').value = p.barcode;
         document.getElementById('editDiscount').value = p.discount_per || '';
         document.getElementById('editDiscountExpiry').value = p.discount_end || '';
@@ -324,7 +322,8 @@ function editProduct(id) {
 
 async function saveEditProduct() {
     const price = Number(document.getElementById('editPrice').value);
-    const pricePerKg = Number(document.getElementById('editPricePerKg').value);
+    const quantity = Number(document.getElementById('editQuantity').value);
+    const unit = document.getElementById('editUnit').value;
     const name = document.getElementById('editName').value;
     const barcode = document.getElementById('editBarcode').value;
     if (!name) {
@@ -333,10 +332,6 @@ async function saveEditProduct() {
     }
     if (!Number.isFinite(price) || price < 0) {
         alert('Please enter a valid price.');
-        return;
-    }
-    if (pricePerKg && (!Number.isFinite(pricePerKg) || pricePerKg < 0)) {
-        alert('Please enter a valid non-negative number for price per kg.');
         return;
     }
     if (barcode && !/^\d{13}$/.test(barcode)) {
@@ -348,12 +343,12 @@ async function saveEditProduct() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             id_product: currentEditProductId,
-            name: document.getElementById('editName').value,
-            descr: document.getElementById('editDescr').value,
-            price: document.getElementById('editPrice').value,
-            price_per_kg: document.getElementById('editPricePerKg').value,
+            name,
+            price,
+            unit,
+            quantity: quantity > 0 ? quantity : null,
             currency_code: document.getElementById('editCurrencyCode').value,
-            barcode: document.getElementById('editBarcode').value,
+            barcode,
             discount_per: document.getElementById('editDiscount').value,
             discount_end: document.getElementById('editDiscountExpiry').value,
             admin_id: getSession().id_admin
@@ -391,6 +386,7 @@ async function deleteProduct(id) {
 // ============================================================
 
 let allLogs = [];
+let adminNamesById = {};
 
 if (document.getElementById('logsTable')) {
     requireAuth();
@@ -403,14 +399,31 @@ async function loadLogs() {
         document.getElementById('navUsername').textContent = user?.name || user?.username || 'Admin';
     }
 
-    const res = await fetch(API.logs);
-    allLogs = await res.json();
+    const [logsRes, adminsRes] = await Promise.all([fetch(API.logs), fetch(API.admins)]);
+    allLogs = await logsRes.json();
+
+    let admins = [];
+    if (adminsRes.ok) {
+        admins = await adminsRes.json();
+    }
+
+    adminNamesById = Object.fromEntries(
+        admins.map(a => {
+            const fullName = `${a.name || ''} ${a.surname || ''}`.trim();
+            const label = fullName || a.username || `Admin #${a.id_admin}`;
+            return [String(a.id_admin), label];
+        })
+    );
 
     const adminSelect = document.getElementById('logAdminFilter');
-    const uniqueAdmins = [...new Set(allLogs.map(l => l.admin_id))];
-    uniqueAdmins.forEach(id => {
-    adminSelect.innerHTML += `<option value="${id}">Admin #${id}</option>`;
-    });
+    if (adminSelect) {
+        adminSelect.innerHTML = '<option value="">All admins</option>';
+        const uniqueAdmins = [...new Set(allLogs.map(l => l.admin_id))];
+        uniqueAdmins.forEach(id => {
+            const label = adminNamesById[String(id)] || `Admin #${id}`;
+            adminSelect.innerHTML += `<option value="${id}">${label}</option>`;
+        });
+    }
 
     renderLogs(allLogs);
 }
@@ -424,7 +437,7 @@ function renderLogs(logs) {
     tbody.innerHTML = logs.map(l => `
     <tr>
       <td>#${l.id_log}</td>
-      <td>Admin #${l.admin_id}</td>
+            <td>${adminNamesById[String(l.admin_id)] || `Admin #${l.admin_id}`}</td>
       <td>Display #${l.display_id}</td>
       <td>${l.product_id ? `#${l.product_id}` : '—'}</td>
       <td>${l.what_changed}</td>
@@ -467,6 +480,23 @@ function formatDate(dateStr) {
     const HH = String(d.getHours()).padStart(2, '0');
     const MM = String(d.getMinutes()).padStart(2, '0');
     return `${dd}/${mm}/${yyyy} ${HH}:${MM}`;
+}
+
+const UNIT_QUANTITY_LABEL = { KG: 'Weight (kg)', L: 'Volume (L)', KOM: 'Quantity (pcs)' };
+const UNIT_PRICE_LABEL    = { KG: 'Price/kg (auto)', L: 'Price/L (auto)', KOM: 'Price/pcs (auto)' };
+
+function updateUnitLabels(prefix) {
+    const unit = document.getElementById(prefix + 'Unit').value;
+    document.getElementById(prefix + 'QuantityLabel').textContent = UNIT_QUANTITY_LABEL[unit] || 'Quantity';
+    document.getElementById(prefix + 'PricePerUnitLabel').textContent = UNIT_PRICE_LABEL[unit] || 'Price/unit (auto)';
+    updatePricePerUnit(prefix);
+}
+
+function updatePricePerUnit(prefix) {
+    const price = Number(document.getElementById(prefix + 'Price').value);
+    const qty   = Number(document.getElementById(prefix + 'Quantity').value);
+    const out   = document.getElementById(prefix + 'PricePerUnit');
+    out.value = (qty > 0 && price >= 0) ? (price / qty).toFixed(2) : '—';
 }
 
 function toggleDiscount(enabled) {
@@ -528,7 +558,7 @@ async function saveInlineEdit(id, field, value) {
         alert('Product name cannot be empty.');
         return false;
     }
-    if (field === 'barcode' && !/^\d{13}$/.test(normalizedValue)) {
+    if (field === 'barcode' && normalizedValue && !/^\d{13}$/.test(normalizedValue)) {
         alert('Please enter a valid 13-digit barcode.');
         return false;
     }
@@ -543,9 +573,9 @@ async function saveInlineEdit(id, field, value) {
     const payload = {
         id_product: id,
         name: field === 'name' ? normalizedValue : product.name,
-        descr: product.descr ?? '',
         price: field === 'price' ? Number(normalizedValue) : product.price,
-        price_per_kg: product.price_per_kg,
+        unit: product.unit ?? 'KOM',
+        quantity: product.quantity ?? null,
         currency_code: product.currency_code,
         barcode: field === 'barcode' ? normalizedValue : (product.barcode ?? ''),
         discount_per: product.discount_per ?? '',
@@ -677,7 +707,7 @@ function makeProductDropdown(td, id) {
             return;
         }
 
-        await saveInlineDisplayProduct(id, 'product_id', selectedValue)
+        await saveInlineDisplayProduct(id, selectedValue)
         display.product_id = selectedValue === '' ? null : Number(selectedValue);
         td.textContent = selectedValue || '—';
     };
@@ -722,12 +752,12 @@ function makeDisplayEditable(td, id, field) {
 
      input.addEventListener('blur', async () => {
     const newValue = input.value.trim();
-    if (!newValue || newValue === originalValue) {
+    if (newValue === originalValue || (field === 'section' && !newValue)) {
         td.textContent = originalValue;
         return;
     }
     const saved = await saveInlineDisplayEdit(id, field, newValue);
-    td.textContent = saved ? newValue : originalValue;
+    td.textContent = saved ? (newValue || '—') : originalValue;
     });
 }
 

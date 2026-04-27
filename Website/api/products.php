@@ -16,15 +16,17 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 } else if($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = $conn->real_escape_string($data['name']);
-    $descr = $conn->real_escape_string($data['descr']);
     $price = floatval($data['price']);
-    $price_per_kg = floatval($data['price_per_kg']);
+    $unit = $conn->real_escape_string($data['unit'] ?? 'KOM');
+    $quantity = floatval($data['quantity'] ?? 0);
+    $price_per_kg = ($quantity > 0) ? round($price / $quantity, 2) : 0;
+    $quantity_sql = ($quantity > 0) ? $quantity : 'NULL';
     $currency_code = $conn->real_escape_string($data['currency_code']);
     $barcode = $conn->real_escape_string($data['barcode']);
     $admin_id = $conn->real_escape_string($data['admin_id']);
 
-    $sql = "INSERT INTO products (name, descr, price, price_per_kg, currency_code, barcode, last_price_change) 
-            VALUES ('$name', '$descr', $price, $price_per_kg, '$currency_code', '$barcode', NOW())";
+    $sql = "INSERT INTO products (name, price, price_per_kg, currency_code, barcode, unit, quantity, last_price_change)
+            VALUES ('$name', $price, $price_per_kg, '$currency_code', '$barcode', '$unit', $quantity_sql, NOW())";
     $sql_insert = "INSERT INTO logs (id_log, admin_id, product_id, changed_at, what_changed) VALUES (NULL, $admin_id, LAST_INSERT_ID(), NOW(), 'Created product $name with price: $price')";
     try {
         $conn->query($sql);
@@ -37,22 +39,26 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
 } else if($_SERVER['REQUEST_METHOD'] === 'PUT') {
     $id = intval($data['id_product']);
     $name = $conn->real_escape_string($data['name']);
-    $descr = $conn->real_escape_string($data['descr']);
     $price = floatval($data['price']);
-    $price_per_kg = floatval($data['price_per_kg']);
+    $unit = $conn->real_escape_string($data['unit'] ?? 'KOM');
+    $quantity = floatval($data['quantity'] ?? 0);
+    $price_per_kg = ($quantity > 0) ? round($price / $quantity, 2) : 0;
+    $quantity_sql = ($quantity > 0) ? $quantity : 'NULL';
     $currency_code = $conn->real_escape_string($data['currency_code']);
     $barcode = $conn->real_escape_string($data['barcode']);
     $discount_per = floatval($data['discount_per']);
-    $discount_end = $conn->real_escape_string($data['discount_end']);
+    $discount_end = $conn->real_escape_string($data['discount_end'] ?? '');
+    $discount_end_sql = empty($discount_end) ? 'NULL' : "'$discount_end'";
     $admin_id = $conn->real_escape_string($data['admin_id']);
 
     $old = $conn->query("SELECT * FROM products WHERE id_product = $id")->fetch_assoc();
     $price_old = $old['price'];
     $name_old = $old['name'];
 
-    $sql = "UPDATE products SET name='$name', descr='$descr', 
-            price=$price, price_per_kg=$price_per_kg, currency_code='$currency_code', barcode='$barcode', 
-            discount_per=$discount_per, discount_end='$discount_end', last_price_change=NOW() WHERE id_product=$id";
+    $sql = "UPDATE products SET name='$name',
+            price=$price, price_per_kg=$price_per_kg, currency_code='$currency_code', barcode='$barcode',
+            unit='$unit', quantity=$quantity_sql,
+            discount_per=$discount_per, discount_end=$discount_end_sql, last_price_change=NOW() WHERE id_product=$id";
     try {
 
     $conn->query($sql);
@@ -71,17 +77,19 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     $url = "http://" . $row['ip'] . "/update";
     $payload = json_encode([
-        "id_display"  => $row['id_display'],
-        "id"          => $id,
-        "name"        => $data['name'],
-        "price"       => $data['price'],
-        "price_per_kg"=> $data['price_per_kg'],
-        "barcode"     => $data['barcode'],
-        "updated"     => date('Y-m-d H:i:s'),
-        "discount_per"=> $data['discount_per'],
+        "id_display"    => $row['id_display'],
+        "id"            => $id,
+        "name"          => $data['name'],
+        "price"         => $data['price'],
+        "price_per_kg"  => $price_per_kg,
+        "unit"          => $unit,
+        "quantity"      => $quantity > 0 ? $quantity : null,
+        "barcode"       => $data['barcode'],
+        "updated"       => date('Y-m-d H:i:s'),
+        "discount_per"  => $data['discount_per'],
         "discount_price"=> strval($discount_price),
-        "lowest_price"=> strval($min_price),
-        "discount_end"=> $data['discount_end'],
+        "lowest_price"  => strval($min_price),
+        "discount_end"  => $data['discount_end'],
     ]);
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_POST, true);

@@ -13,17 +13,19 @@
         $ip = $display['ip'];
         $url = "http://" . $ip . "/update";
         $payload = json_encode([
-            "id_display"  => strval($display['id_display']),
-            "id"          => $row['id_product'],
-            "name"        => $row['name'],
-            "price"       => $row['price'],
-            "price_per_kg"=> $row['price_per_kg'],
-            "barcode"     => $row['barcode'],
-            "updated"     => $row['last_price_change'],
-            "discount_per"=> null,
+            "id_display"    => strval($display['id_display']),
+            "id"            => $row['id_product'],
+            "name"          => $row['name'],
+            "price"         => $row['price'],
+            "price_per_kg"  => $row['price_per_kg'],
+            "unit"          => $row['unit'],
+            "quantity"      => $row['quantity'],
+            "barcode"       => $row['barcode'],
+            "updated"       => $row['last_price_change'],
+            "discount_per"  => null,
             "discount_price"=> null,
-            "lowest_price"=> null,
-            "discount_end"=> null,
+            "lowest_price"  => null,
+            "discount_end"  => null,
         ]);
         error_log("Sending payload: " . $payload);
         $ch = curl_init($url);

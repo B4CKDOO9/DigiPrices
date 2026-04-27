@@ -65,6 +65,7 @@
                         <th>ID</th>
                         <th>Name</th>
                         <th>Price</th>
+                        <th>Price/Unit</th>
                         <th>Currency</th>
                         <th>Barcode</th>
                         <th>Last Changed</th>
@@ -139,16 +140,24 @@
                 <input type="text" id="newName" placeholder="e.g. Full Fat Milk" />
             </div>
             <div class="form-group">
-                <label>Description (optional)</label>
-                <input type="text" id="newDescr" placeholder="Optional description" />
-            </div>
-            <div class="form-group">
                 <label>*Price</label>
-                <input type="number" step="0.01" id="newPrice" placeholder="0.00" />
+                <input type="number" step="0.01" id="newPrice" placeholder="0.00" oninput="updatePricePerUnit('new')" />
             </div>
             <div class="form-group">
-                <label>*Price per kg</label>
-                <input type="number" step="0.01" id="newPricePerKg" placeholder="0.00" />
+                <label>Unit</label>
+                <select id="newUnit" onchange="updateUnitLabels('new')">
+                    <option value="KOM" selected>KOM (per piece)</option>
+                    <option value="KG">KG (per kilogram)</option>
+                    <option value="L">L (per litre)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label id="newQuantityLabel">Quantity (pcs)</label>
+                <input type="number" step="0.001" min="0" id="newQuantity" placeholder="e.g. 6" oninput="updatePricePerUnit('new')" />
+            </div>
+            <div class="form-group">
+                <label id="newPricePerUnitLabel">Price/pcs (auto)</label>
+                <input type="text" id="newPricePerUnit" disabled placeholder="—" />
             </div>
             <div class="form-group">
                 <label>Currency (optional)</label>
@@ -174,16 +183,24 @@
                 <input type="text" id="editName" />
             </div>
             <div class="form-group">
-                <label>Description (optional)</label>
-                <input type="text" id="editDescr" />
-            </div>
-            <div class="form-group">
                 <label>*Price</label>
-                <input type="number" step="0.01" id="editPrice" />
+                <input type="number" step="0.01" id="editPrice" oninput="updatePricePerUnit('edit')" />
             </div>
             <div class="form-group">
-                <label>*Price per kg</label>
-                <input type="number" step="0.01" id="editPricePerKg" />
+                <label>Unit</label>
+                <select id="editUnit" onchange="updateUnitLabels('edit')">
+                    <option value="KOM">KOM (per piece)</option>
+                    <option value="KG">KG (per kilogram)</option>
+                    <option value="L">L (per litre)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label id="editQuantityLabel">Quantity (pcs)</label>
+                <input type="number" step="0.001" min="0" id="editQuantity" oninput="updatePricePerUnit('edit')" />
+            </div>
+            <div class="form-group">
+                <label id="editPricePerUnitLabel">Price/pcs (auto)</label>
+                <input type="text" id="editPricePerUnit" disabled placeholder="—" />
             </div>
             <div class="form-group">
                 <label>Currency (optional)</label>

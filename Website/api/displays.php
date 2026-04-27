@@ -92,17 +92,19 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
             $url = "http://" . $ip . "/update";
             $payload = json_encode([
-                "id_display"  => strval($id),
-                "id"          => $product['id_product'],
-                "name"        => $product['name'],
-                "price"       => $product['price'],
-                "price_per_kg"=> $product['price_per_kg'],
-                "barcode"     => $product['barcode'],
-                "updated"     => $product['last_price_change'],
-                "discount_per"=> $product['discount_per'],
+                "id_display"    => strval($id),
+                "id"            => $product['id_product'],
+                "name"          => $product['name'],
+                "price"         => $product['price'],
+                "price_per_kg"  => $product['price_per_kg'],
+                "unit"          => $product['unit'],
+                "quantity"      => $product['quantity'],
+                "barcode"       => $product['barcode'],
+                "updated"       => $product['last_price_change'],
+                "discount_per"  => $product['discount_per'],
                 "discount_price"=> strval($discount_price),
-                "lowest_price"=> strval($min_price),
-                "discount_end"=> $product['discount_end'],
+                "lowest_price"  => strval($min_price),
+                "discount_end"  => $product['discount_end'],
                 ]);
             error_log("Sending payload: " . $payload);
             $ch = curl_init($url);                    // create curl request to $url
