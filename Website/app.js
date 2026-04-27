@@ -447,19 +447,30 @@ function renderLogs(logs) {
 }
 
 function filterLogs() {
-        const q = document.getElementById('logSearch').value.toLowerCase();
-        const adminFilter = document.getElementById('logAdminFilter').value;
-        const dateFrom = document.getElementById('logDateFrom').value;
-        const dateTo = document.getElementById('logDateTo').value;
+    const logId      = document.getElementById('fLogId').value.trim();
+    const adminFilter= document.getElementById('logAdminFilter').value;
+    const displayF   = document.getElementById('fDisplay').value.trim();
+    const productF   = document.getElementById('fProduct').value.trim();
+    const q          = document.getElementById('logSearch').value.toLowerCase();
+    const dateFrom   = document.getElementById('logDateFrom').value;
+    const dateTo     = document.getElementById('logDateTo').value;
 
-        renderLogs(allLogs.filter(l => {
-            const matchesSearch = l.what_changed.toLowerCase().includes(q) ||
-                String(l.display_id).includes(q) ||
-                String(l.admin_id).includes(q);
-            const matchesAdmin = !adminFilter || String(l.admin_id) === adminFilter;
-            const matchesDate = (!dateFrom || l.changed_at >= dateFrom) && (!dateTo || l.changed_at <= dateTo + " 23:59:59");
-            return matchesSearch && matchesAdmin && matchesDate;
-        }));
+    renderLogs(allLogs.filter(l => {
+        const matchesId      = !logId      || String(l.id_log).includes(logId);
+        const matchesAdmin   = !adminFilter|| String(l.admin_id) === adminFilter;
+        const matchesDisplay = !displayF   || (l.display_id != null && String(l.display_id).includes(displayF));
+        const matchesProduct = !productF   || (l.product_id != null && String(l.product_id).includes(productF));
+        const matchesSearch  = !q          || l.what_changed.toLowerCase().includes(q);
+        const matchesDate    = (!dateFrom  || l.changed_at >= dateFrom) &&
+                               (!dateTo    || l.changed_at <= dateTo + ' 23:59:59');
+        return matchesId && matchesAdmin && matchesDisplay && matchesProduct && matchesSearch && matchesDate;
+    }));
+}
+
+function clearFilters() {
+    ['fLogId', 'logAdminFilter', 'fDisplay', 'fProduct', 'logSearch', 'logDateFrom', 'logDateTo']
+        .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    filterLogs();
 }
 
 // ============================================================

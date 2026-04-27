@@ -518,9 +518,41 @@ select option {
     background: transparent;
 }
 
-/* ===== FILTER ROW ===== */
-.filter-row input {
-    width: 260px;
+/* ===== INLINE FILTER ROW ===== */
+.filter-tr th {
+    padding: 0.45rem 0.75rem;
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+}
+
+.filter-tr input,
+.filter-tr select {
+    width: 100%;
+    padding: 0.3rem 0.55rem;
+    font-size: 0.78rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text);
+    font-family: var(--font-body);
+    transition: border-color 0.15s;
+}
+
+.filter-tr input:focus,
+.filter-tr select:focus {
+    border-color: var(--accent);
+    outline: none;
+}
+
+.filter-tr input::placeholder {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+.date-filter-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
 /* Discount toggle */

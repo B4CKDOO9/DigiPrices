@@ -28,15 +28,7 @@
     <main class="main-content">
     <div class="page-header">
         <h2>Activity Logs</h2>
-    </div>
-    
-    <div class="filter-row">
-        <input type="text" id="logSearch" placeholder="Search logs..." oninput="filterLogs()" />
-        <select id="logAdminFilter" onchange="filterLogs()">
-            <option value="">All Admins</option>
-        </select>
-        <input type="date" id="logDateFrom" onchange="filterLogs()" />
-        <input type="date" id="logDateTo" onchange="filterLogs()" />
+        <button class="btn-primary small" onclick="clearFilters()">Clear Filters</button>
     </div>
 
         <div class="table-wrapper">
@@ -49,6 +41,19 @@
                         <th>Product</th>
                         <th>What Changed</th>
                         <th>Changed At</th>
+                    </tr>
+                    <tr class="filter-tr">
+                        <th><input type="number" id="fLogId" placeholder="ID..." oninput="filterLogs()"></th>
+                        <th><select id="logAdminFilter" onchange="filterLogs()"><option value="">All admins</option></select></th>
+                        <th><input type="number" id="fDisplay" placeholder="Display #" oninput="filterLogs()"></th>
+                        <th><input type="number" id="fProduct" placeholder="Product #" oninput="filterLogs()"></th>
+                        <th><input type="text" id="logSearch" placeholder="Search..." oninput="filterLogs()"></th>
+                        <th>
+                            <div class="date-filter-cell">
+                                <input type="date" id="logDateFrom" onchange="filterLogs()">
+                                <input type="date" id="logDateTo" onchange="filterLogs()">
+                            </div>
+                        </th>
                     </tr>
                 </thead>
                 <tbody id="logsBody">
