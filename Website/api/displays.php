@@ -110,6 +110,7 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
             curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);           // attach the JSON
             curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);  // tell it we're sending JSON
             curl_setopt($ch, CURLOPT_TIMEOUT, 2);   // how many seconds before giving up?
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_exec($ch);                           // send it!
             curl_close($ch);    // clean up
         }
