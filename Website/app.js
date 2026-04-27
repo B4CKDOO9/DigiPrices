@@ -206,12 +206,12 @@ async function addDisplay() {
 function editDisplay(id) {
     currentEditDisplayId = id;
     const d = cachedDisplays.find(x => x.id_display == id);
-    document.getElementById('editSection').value = d.section;
+    document.getElementById('editSection').value = d.section;S
     document.getElementById('editIp').value = d.ip;
 
     const select = document.getElementById('editProductId');
     select.innerHTML = '<option value="">-- None --</option>';
-    cachedProducts.forEach(p => { select.innerHTML += `<option value="${p.id_product}">${p.displaying_name}</option>`; });
+    cachedProducts.forEach(p => { select.innerHTML += `<option value="${p.id_product}">${p.name}</option>`; });
     select.value = d.product_id ?? '';
 
     openModal('editDisplayModal');
