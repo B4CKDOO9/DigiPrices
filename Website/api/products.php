@@ -15,7 +15,6 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     echo json_encode($rows);
 
 } else if($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $displaying_name = $conn->real_escape_string($data['displaying_name']);
     $name = $conn->real_escape_string($data['name']);
     $descr = $conn->real_escape_string($data['descr']);
     $price = floatval($data['price']);
@@ -24,8 +23,8 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     $barcode = $conn->real_escape_string($data['barcode']);
     $admin_id = $conn->real_escape_string($data['admin_id']);
 
-    $sql = "INSERT INTO products (displaying_name, name, descr, price, price_per_kg, currency_code, barcode, last_price_change) 
-            VALUES ('$displaying_name', '$name', '$descr', $price, $price_per_kg, '$currency_code', '$barcode', NOW())";
+    $sql = "INSERT INTO products (name, descr, price, price_per_kg, currency_code, barcode, last_price_change) 
+            VALUES ('$name', '$descr', $price, $price_per_kg, '$currency_code', '$barcode', NOW())";
     $sql_insert = "INSERT INTO logs (id_log, admin_id, product_id, changed_at, what_changed) VALUES (NULL, $admin_id, LAST_INSERT_ID(), NOW(), 'Created product $name with price: $price')";
     try {
         $conn->query($sql);
@@ -37,7 +36,6 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 } else if($_SERVER['REQUEST_METHOD'] === 'PUT') {
     $id = intval($data['id_product']);
-    $displaying_name = $conn->real_escape_string($data['displaying_name']);
     $name = $conn->real_escape_string($data['name']);
     $descr = $conn->real_escape_string($data['descr']);
     $price = floatval($data['price']);
@@ -52,7 +50,7 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     $price_old = $old['price'];
     $name_old = $old['name'];
 
-    $sql = "UPDATE products SET displaying_name='$displaying_name', name='$name', descr='$descr', 
+    $sql = "UPDATE products SET name='$name', descr='$descr', 
             price=$price, price_per_kg=$price_per_kg, currency_code='$currency_code', barcode='$barcode', 
             discount_per=$discount_per, discount_end='$discount_end', last_price_change=NOW() WHERE id_product=$id";
     try {

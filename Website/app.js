@@ -169,7 +169,6 @@ function renderProductsTable(products) {
     tbody.innerHTML = products.map(p => `
     <tr>
       <td>#${p.id_product}</td>
-      <td>${p.displaying_name}</td>
       <td>${p.name}</td>
       <td style="font-family:var(--font-mono);">${p.price} ${p.currency_code}</td>
       <td style="font-family:var(--font-mono);font-size:0.78rem;">${p.barcode}</td>
@@ -260,7 +259,6 @@ async function addProduct() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            displaying_name: document.getElementById('newDisplayingName').value,
             name: document.getElementById('newName').value,
             descr: document.getElementById('newDescr').value,
             price: document.getElementById('newPrice').value,
@@ -283,7 +281,6 @@ function editProduct(id) {
     fetch(API.products).then(r => r.json()).then(data => {
         const p = data.find(x => x.id_product == id);
         currentEditProductId = id;
-        document.getElementById('editDisplayingName').value = p.displaying_name;
         document.getElementById('editName').value = p.name;
         document.getElementById('editDescr').value = p.descr || '';
         document.getElementById('editPrice').value = p.price;
@@ -302,7 +299,6 @@ async function saveEditProduct() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             id_product: currentEditProductId,
-            displaying_name: document.getElementById('editDisplayingName').value,
             name: document.getElementById('editName').value,
             descr: document.getElementById('editDescr').value,
             price: document.getElementById('editPrice').value,
