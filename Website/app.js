@@ -153,9 +153,9 @@ function renderDisplaysTable(displays) {
     tbody.innerHTML = displays.map(d => `
     <tr>
       <td>#${d.id_display}</td>
-      <td>${d.section}</td>
-      <td style="font-family:var(--font-mono);font-size:0.78rem;">${d.ip}</td>
-      <td>${d.product_id ?? '—'}</td>
+            <td class="editable" tabindex="0" title="Click or press Enter to edit" onclick="makeDisplayEditable(this, ${d.id_display}, 'section')" onkeydown="handleDisplayEditableCellKeydown(event, this, ${d.id_display}, 'section')">${d.section}</td>
+            <td class="editable" tabindex="0" title="Click or press Enter to edit" onclick="makeDisplayEditable(this, ${d.id_display}, 'ip')" onkeydown="handleDisplayEditableCellKeydown(event, this, ${d.id_display}, 'ip')">${d.ip}</td>
+            <td class="editable" tabindex="0" title="Click or press Enter to select product" onclick="makeProductDropdown(this, ${d.id_display})" onkeydown="handleDisplayProductDropdownKeydown(event, this, ${d.id_display})">${d.product_id ?? '—'}</td>
       <td>
         <button class="btn-edit" onclick="editDisplay(${d.id_display})">Edit</button>
         <button class="btn-delete" onclick="deleteDisplay(${d.id_display})">Delete</button>
@@ -169,11 +169,12 @@ function renderProductsTable(products) {
     tbody.innerHTML = products.map(p => `
     <tr>
       <td>#${p.id_product}</td>
-      <td>${p.name}</td>
-      <td style="font-family:var(--font-mono);">${p.price} ${p.currency_code}</td>
-      <td style="font-family:var(--font-mono);font-size:0.78rem;">${p.barcode}</td>
+    <td class="editable" tabindex="0" title="Click or press Enter to edit" onclick="makeEditable(this, ${p.id_product}, 'name')" onkeydown="handleEditableCellKeydown(event, this, ${p.id_product}, 'name')">${p.name}</td>
+    <td class="editable" tabindex="0" title="Click or press Enter to edit" onclick="makeEditable(this, ${p.id_product}, 'price')" onkeydown="handleEditableCellKeydown(event, this, ${p.id_product}, 'price')" style="font-family:var(--font-mono);">${p.price}</td>
+      <td>${p.currency_code}</td>
+    <td class="editable" tabindex="0" title="Click or press Enter to edit" onclick="makeEditable(this, ${p.id_product}, 'barcode')" onkeydown="handleEditableCellKeydown(event, this, ${p.id_product}, 'barcode')" style="font-family:var(--font-mono);font-size:0.78rem;">${p.barcode}</td>
       <td style="font-size:0.8rem;color:var(--text-muted);">${formatDate(p.last_price_change)}</td>
-      <td>${p.discount_per ? p.discount_per + '%' : '—'}</td>
+      <td>${(p.discount_per && p.discount_per !== "0.00") ? p.discount_per + '%' : '—'}</td>
       <td>${formatDate(p.discount_end)}</td>
       <td>
         <button class="btn-edit" onclick="editProduct(${p.id_product})">Edit</button>
@@ -206,7 +207,7 @@ async function addDisplay() {
 function editDisplay(id) {
     currentEditDisplayId = id;
     const d = cachedDisplays.find(x => x.id_display == id);
-    document.getElementById('editSection').value = d.section;S
+    document.getElementById('editSection').value = d.section;
     document.getElementById('editIp').value = d.ip;
 
     const select = document.getElementById('editProductId');
@@ -255,6 +256,27 @@ async function deleteDisplay(id) {
 let currentEditProductId = null;
 
 async function addProduct() {
+    const price = Number(document.getElementById('newPrice').value);
+    const pricePerKg = Number(document.getElementById('newPricePerKg').value);
+    const name = document.getElementById('newName').value.trim();
+    const barcode = document.getElementById('newBarcode').value.trim();
+    if (!name) {
+        alert('Product name cannot be empty.');
+        return;
+    }
+    if (!Number.isFinite(price) || price < 0) {
+        alert('Please enter a valid price.');
+        return;
+    }
+    if (pricePerKg && (!Number.isFinite(pricePerKg) || pricePerKg < 0)) {
+        alert('Please enter a valid non-negative number for price per kg.');
+        return;
+    }
+    if (barcode && !/^\d{13}$/.test(barcode)) {
+        alert('Please enter a valid 13-digit barcode.');
+        return;
+    }
+    //const normalizedPrice = price.toFixed(2);
     const res = await fetch(API.products, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -289,11 +311,38 @@ function editProduct(id) {
         document.getElementById('editBarcode').value = p.barcode;
         document.getElementById('editDiscount').value = p.discount_per || '';
         document.getElementById('editDiscountExpiry').value = p.discount_end || '';
+        if (p.discount_per && p.discount_per !== "0.00") {
+            document.getElementById('editDiscountToggle').checked = true;
+            toggleDiscount(true);
+        } else {
+            document.getElementById('editDiscountToggle').checked = false;
+            toggleDiscount(false);
+        }
         openModal('editProductModal');
     });
 }
 
 async function saveEditProduct() {
+    const price = Number(document.getElementById('editPrice').value);
+    const pricePerKg = Number(document.getElementById('editPricePerKg').value);
+    const name = document.getElementById('editName').value;
+    const barcode = document.getElementById('editBarcode').value;
+    if (!name) {
+        alert('Product name cannot be empty.');
+        return;
+    }
+    if (!Number.isFinite(price) || price < 0) {
+        alert('Please enter a valid price.');
+        return;
+    }
+    if (pricePerKg && (!Number.isFinite(pricePerKg) || pricePerKg < 0)) {
+        alert('Please enter a valid non-negative number for price per kg.');
+        return;
+    }
+    if (barcode && !/^\d{13}$/.test(barcode)) {
+        alert('Please enter a valid 13-digit barcode.');
+        return;
+    }
     const res = await fetch(API.products, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -404,6 +453,7 @@ function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 function formatDate(dateStr) {
     if(!dateStr) return '—';
     const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '—'; // check if date is valid
     // build dd/mm/yyyy HH:mm from the Date object
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -413,6 +463,313 @@ function formatDate(dateStr) {
     return `${dd}/${mm}/${yyyy} ${HH}:${MM}`;
 }
 
+function toggleDiscount(enabled) {
+    document.getElementById('editDiscount').disabled = !enabled;
+    document.getElementById('editDiscountExpiry').disabled = !enabled;
+    if (!enabled) {
+        document.getElementById('editDiscount').value = '';
+        document.getElementById('editDiscountExpiry').value = '';
+    }
+}
+async function saveInlineDisplayEdit(id, field, value) { 
+    const display = cachedDisplays.find(d => d.id_display == id);
+    if (!display) {
+        alert('Display not found.');
+        return false;
+    }
+    if (field === 'ip' && value && !/^(\d{1,3}\.){3}\d{1,3}$/.test(value)) {
+        alert('Please enter a valid IP address.');
+        return false;
+    }
+    const payload = {
+         id_display: id,
+         section: field === 'section' ? value.trim() : display.section,
+         ip: field === 'ip' ? value.trim() : display.ip,
+         product_id: display.product_id ?? '',
+         admin_id: getSession().id_admin
+    };
+
+    try {
+        const res = await fetch(API.displays, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+            alert('Error: ' + data.message);
+            return false;
+        }
+
+        display[field] = value;
+        return true;
+    } catch (err) {
+        alert('Network error while saving inline edit.');
+        return false;
+    }
+}
+
+async function saveInlineEdit(id, field, value) {
+    const product = cachedProducts.find(p => p.id_product == id);
+    if (!product) {
+        alert('Product not found.');
+        return false;
+    }
+
+    const normalizedValue = String(value).trim();
+    if (field === 'name' && !normalizedValue) {
+        alert('Product name cannot be empty.');
+        return false;
+    }
+    if (field === 'barcode' && !/^\d{13}$/.test(normalizedValue)) {
+        alert('Please enter a valid 13-digit barcode.');
+        return false;
+    }
+    if (field === 'price') {
+        const numericPrice = Number(normalizedValue);
+        if (!Number.isFinite(numericPrice) || numericPrice < 0) {
+            alert('Please enter a valid non-negative price.');
+            return false;
+        }
+    }
+
+    const payload = {
+        id_product: id,
+        name: field === 'name' ? normalizedValue : product.name,
+        descr: product.descr ?? '',
+        price: field === 'price' ? Number(normalizedValue) : product.price,
+        price_per_kg: product.price_per_kg,
+        currency_code: product.currency_code,
+        barcode: field === 'barcode' ? normalizedValue : (product.barcode ?? ''),
+        discount_per: product.discount_per ?? '',
+        discount_end: product.discount_end ?? '',
+        admin_id: getSession().id_admin
+    };
+
+    try {
+        const res = await fetch(API.products, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+            alert('Error: ' + data.message);
+            return false;
+        }
+
+        product[field] = field === 'price' ? Number(normalizedValue).toFixed(2) : normalizedValue;
+        return true;
+    } catch (err) {
+        alert('Network error while saving inline edit.');
+        return false;
+    }
+}
+
+async function saveInlineDisplayProduct(id, product_id) {
+    const display = cachedDisplays.find(d => d.id_display == id);
+    if (!display) {
+        alert('Display not found.');
+        return false;
+    }
+
+    const payload = {
+        id_display: id,
+        section: display.section,
+        ip: display.ip,
+        product_id: product_id ?? '',
+        admin_id: getSession().id_admin
+    };
+
+    try {
+        const res = await fetch(API.displays, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+            alert('Error: ' + data.message);
+            return false;
+        }
+
+        display.product_id = product_id;
+        return true;
+    } catch (err) {
+        alert('Network error while saving inline edit.');
+        return false;
+    }
+}
+
+function handleEditableCellKeydown(e, td, id, field) {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        makeEditable(td, id, field);
+    }
+}
+
+function handleDisplayEditableCellKeydown(e, td, id, field) {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        makeDisplayEditable(td, id, field);
+    }
+}
+
+function handleDisplayProductDropdownKeydown(e, td, id) {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        makeProductDropdown(td, id);
+    }
+}
+
+function makeProductDropdown(td, id) {
+    if (td.querySelector('select')) return;
+    const display = cachedDisplays.find(d => d.id_display == id);
+    if (!display) {
+        alert('Display not found.');
+        return;
+    }
+
+    const originalValue = display.product_id == null ? '' : String(display.product_id);
+    const select = document.createElement('select');
+    select.style.width = '100%';
+
+    const emptyOption = document.createElement('option');
+    emptyOption.value = '';
+    emptyOption.textContent = '-- None --';
+    select.appendChild(emptyOption);
+
+    cachedProducts.forEach(p => {
+        const option = document.createElement('option');
+        option.value = String(p.id_product);
+        option.textContent = `#${p.id_product} - ${p.name}`;
+        select.appendChild(option);
+    });
+
+    select.value = originalValue;
+    td.textContent = '';
+    td.appendChild(select);
+    select.focus();
+
+    let handled = false;
+
+    const restoreOriginal = () => {
+        handled = true;
+        td.textContent = originalValue || '—';
+    };
+
+    const commitSelection = async () => {
+        if (handled) return;
+        handled = true;
+
+        const selectedValue = select.value;
+        if (selectedValue === originalValue) {
+            td.textContent = selectedValue || '—';
+            return;
+        }
+
+        await saveInlineDisplayProduct(id, 'product_id', selectedValue)
+        display.product_id = selectedValue === '' ? null : Number(selectedValue);
+        td.textContent = selectedValue || '—';
+    };
+
+    select.addEventListener('change', commitSelection);
+    select.addEventListener('blur', commitSelection);
+
+    select.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            commitSelection();
+        }
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            restoreOriginal();
+        }
+    });
+}
+
+function makeDisplayEditable(td, id, field) {
+    if (td.querySelector('input')) return;
+    const originalValue = td.textContent;
+    const input = document.createElement('input');
+    input.type = "text";
+    input.value = originalValue;
+    input.style.width = '100%';
+    td.textContent = '';
+    td.appendChild(input);
+    input.focus();
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            input.blur();
+        }
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            input.value = originalValue;
+            input.blur();
+        }
+    });
+
+     input.addEventListener('blur', async () => {
+    const newValue = input.value.trim();
+    if (!newValue || newValue === originalValue) {
+        td.textContent = originalValue;
+        return;
+    }
+    const saved = await saveInlineDisplayEdit(id, field, newValue);
+    td.textContent = saved ? newValue : originalValue;
+    });
+}
+
+
+function makeEditable(td, id, field) {
+    if (td.querySelector('input')) return;
+    const originalValue = td.textContent;
+    const input = document.createElement('input');
+    input.type = field === 'price' ? 'number' : 'text';
+    if (field === 'price') {
+        input.step = '0.01';
+        input.min = '0';
+    }
+    input.value = originalValue;
+    input.style.width = '100%';
+    td.textContent = '';
+    td.appendChild(input);
+    input.focus();
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            input.blur();
+        }
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            input.value = originalValue;
+            input.blur();
+        }
+    });
+
+    input.addEventListener('blur', async () => {
+        const newValue = input.value.trim();
+        const valueUnchanged = field === 'price'
+            ? Number(newValue) === Number(originalValue)
+            : newValue === originalValue;
+
+        if (!newValue || valueUnchanged) {
+            td.textContent = originalValue;
+            return;
+        }
+
+        const saved = await saveInlineEdit(id, field, newValue);
+        td.textContent = saved
+            ? (field === 'price' ? Number(newValue).toFixed(2) : newValue)
+            : originalValue;
+    });
+}
 // Close modal on overlay click
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', (e) => {
