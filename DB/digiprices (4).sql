@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 27, 2026 at 11:23 PM
+-- Generation Time: Apr 28, 2026 at 09:48 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -22,7 +22,6 @@ SET time_zone = "+00:00";
 --
 
 -- --------------------------------------------------------
-
 
 --
 -- Table structure for table `admins`
@@ -66,7 +65,7 @@ CREATE TABLE `displays` (
 --
 
 INSERT INTO `displays` (`id_display`, `section`, `ip`, `product_id`) VALUES
-(68, 'cars', '10.185.98.7', 20);
+(68, 'cars', '10.185.98.7', 27);
 
 -- --------------------------------------------------------
 
@@ -185,15 +184,20 @@ INSERT INTO `logs` (`id_log`, `admin_id`, `product_id`, `display_id`, `changed_a
 (112, 1, NULL, NULL, '2026-04-27 17:05:44', 'Price: 3.00 -> 5; '),
 (132, 1, NULL, NULL, '2026-04-27 22:14:15', 'Deleted display with IP: 10.182.133.251'),
 (133, 1, NULL, NULL, '2026-04-27 22:14:18', 'Deleted product Numer with price: 3.00'),
-(134, 1, 20, NULL, '2026-04-27 22:22:18', 'Created product BMW with price: 25000'),
+(134, 1, NULL, NULL, '2026-04-27 22:22:18', 'Created product BMW with price: 25000'),
 (135, 1, NULL, NULL, '2026-04-27 22:22:20', 'Created product BMW with price: 25000'),
-(136, 1, 22, NULL, '2026-04-27 22:22:25', 'Created product BMW with price: 25000'),
-(137, 1, 23, NULL, '2026-04-27 22:22:26', 'Created product BMW with price: 25000'),
-(138, 1, 24, NULL, '2026-04-27 22:22:28', 'Created product BMW with price: 25000'),
-(139, 1, 25, NULL, '2026-04-27 22:22:39', 'Created product BMW with price: 25000'),
+(136, 1, NULL, NULL, '2026-04-27 22:22:25', 'Created product BMW with price: 25000'),
+(137, 1, NULL, NULL, '2026-04-27 22:22:26', 'Created product BMW with price: 25000'),
+(138, 1, NULL, NULL, '2026-04-27 22:22:28', 'Created product BMW with price: 25000'),
+(139, 1, NULL, NULL, '2026-04-27 22:22:39', 'Created product BMW with price: 25000'),
 (140, 1, NULL, NULL, '2026-04-27 22:24:01', 'Deleted product BMW with price: 25000.00'),
-(141, 1, 20, 68, '2026-04-27 22:25:49', 'Product shown changed from (#) to (#20);Section changed from'),
-(142, 1, 20, NULL, '2026-04-27 22:28:18', 'Price: 25000.00 -> 24000; ');
+(141, 1, NULL, 68, '2026-04-27 22:25:49', 'Product shown changed from (#) to (#20);Section changed from'),
+(142, 1, NULL, NULL, '2026-04-27 22:28:18', 'Price: 25000.00 -> 24000; '),
+(143, 1, NULL, NULL, '2026-04-28 00:01:35', 'Created product Nigger with price: 2'),
+(144, 1, NULL, 68, '2026-04-28 00:01:45', 'Product shown changed from (#) to (#26);'),
+(145, 1, NULL, NULL, '2026-04-28 00:02:03', 'Deleted product Nigger with price: 2.00'),
+(146, 1, 27, NULL, '2026-04-28 00:12:11', 'Created product Nigger with price: 3'),
+(147, 1, 27, 68, '2026-04-28 00:12:15', 'Product shown changed from (#) to (#27);');
 
 -- --------------------------------------------------------
 
@@ -207,13 +211,6 @@ CREATE TABLE `price_history` (
   `price` decimal(10,2) DEFAULT NULL,
   `changed_at` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `price_history`
---
-
-INSERT INTO `price_history` (`id_history`, `product_id`, `price`, `changed_at`) VALUES
-(18, 20, 25000.00, '2026-04-27 22:28:18');
 
 -- --------------------------------------------------------
 
@@ -230,7 +227,7 @@ CREATE TABLE `products` (
   `barcode` varchar(32) DEFAULT NULL,
   `last_price_change` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `version` int(11) NOT NULL DEFAULT 1,
-  `discount_per` decimal(4,2) DEFAULT NULL,
+  `discount_per` decimal(3,0) DEFAULT NULL,
   `discount_end` datetime DEFAULT NULL,
   `unit` enum('KG','L','KOM') NOT NULL DEFAULT 'KOM',
   `quantity` decimal(10,3) DEFAULT NULL
@@ -241,11 +238,7 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id_product`, `name`, `price`, `price_per_kg`, `currency_code`, `barcode`, `last_price_change`, `version`, `discount_per`, `discount_end`, `unit`, `quantity`) VALUES
-(20, 'BMW', 24000.00, 100.00, 'EUR', '0234567890123', '2026-04-27 22:46:09', 1, 0.00, '0000-00-00 00:00:00', 'KOM', NULL),
-(22, 'BMW', 25000.00, 100.00, 'EUR', '0234567890123', '2026-04-27 22:22:25', 1, NULL, NULL, 'KOM', NULL),
-(23, 'BMW', 25000.00, 100.00, 'EUR', '0234567890123', '2026-04-27 22:22:26', 1, NULL, NULL, 'KOM', NULL),
-(24, 'BMW', 25000.00, 100.00, 'EUR', '0234567890123', '2026-04-27 22:22:28', 1, NULL, NULL, 'KOM', NULL),
-(25, 'BMW', 25000.00, 100.00, 'EUR', '0234567890123', '2026-04-27 22:22:39', 1, NULL, NULL, 'KOM', NULL);
+(27, 'Nigger', 3.00, 3.00, 'EUR', '1234567890123', '2026-04-28 09:47:32', 1, NULL, NULL, 'KOM', 1.000);
 
 --
 -- Indexes for dumped tables
@@ -312,7 +305,7 @@ ALTER TABLE `displays`
 -- AUTO_INCREMENT for table `logs`
 --
 ALTER TABLE `logs`
-  MODIFY `id_log` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=143;
+  MODIFY `id_log` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=148;
 
 --
 -- AUTO_INCREMENT for table `price_history`
@@ -324,7 +317,7 @@ ALTER TABLE `price_history`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id_product` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+  MODIFY `id_product` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- Constraints for dumped tables
