@@ -46,7 +46,7 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     $quantity_sql = ($quantity > 0) ? $quantity : 'NULL';
     $currency_code = $conn->real_escape_string($data['currency_code']);
     $barcode = $conn->real_escape_string($data['barcode']);
-    $discount_per = floatval($data['discount_per']);
+    $discount_per = !empty($data['discount_per']) ? floatval($data['discount_per']) : 'NULL';
     $discount_end = $conn->real_escape_string($data['discount_end'] ?? '');
     $discount_end_sql = empty($discount_end) ? 'NULL' : "'$discount_end'";
     $admin_id = $conn->real_escape_string($data['admin_id']);

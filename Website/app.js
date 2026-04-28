@@ -175,7 +175,7 @@ function renderProductsTable(products) {
       <td>${p.currency_code}</td>
       <td class="editable" tabindex="0" title="Click or press Enter to edit" onclick="makeEditable(this, ${p.id_product}, 'barcode')" onkeydown="handleEditableCellKeydown(event, this, ${p.id_product}, 'barcode')" style="font-family:var(--font-mono);font-size:0.78rem;">${p.barcode}</td>
       <td style="font-size:0.8rem;color:var(--text-muted);">${formatDate(p.last_price_change)}</td>
-      <td>${(p.discount_per && p.discount_per !== "0.00") ? p.discount_per + '%' : '—'}</td>
+      <td>${(p.discount_per && p.discount_per !== "0") ? p.discount_per + '%' : '—'}</td>
       <td>${formatDate(p.discount_end)}</td>
       <td>
         <button class="btn-edit" onclick="editProduct(${p.id_product})">Edit</button>
@@ -274,6 +274,7 @@ async function addProduct() {
         alert('Please enter a valid 13-digit barcode.');
         return;
     }
+
     const res = await fetch(API.products, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -309,7 +310,7 @@ function editProduct(id) {
         document.getElementById('editBarcode').value = p.barcode;
         document.getElementById('editDiscount').value = p.discount_per || '';
         document.getElementById('editDiscountExpiry').value = p.discount_end || '';
-        if (p.discount_per && p.discount_per !== "0.00") {
+        if (p.discount_per && p.discount_per !== "0") {
             document.getElementById('editDiscountToggle').checked = true;
             toggleDiscount(true);
         } else {
