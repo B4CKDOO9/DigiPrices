@@ -69,6 +69,7 @@ static const char *JSON_DISCOUNT_PER = "discount_per";
 static const char *JSON_DISCOUNT_PRICE = "discount_price";
 static const char *JSON_LOWEST_PRICE = "lowest_price";
 static const char *JSON_DISCOUNT_END = "discount_end";
+static const char *JSON_UNIT = "unit";
 
 // ===================== Data model =====================
 struct ProductData
@@ -84,6 +85,7 @@ struct ProductData
   String discount_price;
   String lowest_price;
   String discount_end;
+  String unit;
 };
 
 static ProductData g_current;
@@ -166,6 +168,7 @@ static bool parseProductJson(const String &payload, ProductData &out)
   out.discount_price = doc[JSON_DISCOUNT_PRICE] | "";
   out.lowest_price = doc[JSON_LOWEST_PRICE] | "";
   out.discount_end = doc[JSON_DISCOUNT_END] | "";
+  out.unit = doc[JSON_UNIT] | "";
 
   // Basic sanity
   if (out.name.length() == 0)
@@ -324,71 +327,135 @@ static void drawEan13BarcodeHorizontal(int x, int y, int w, int h, const String 
 }
 
 // ===================== UI drawing =====================
+// Croatian number format: 3.000,75 instead of 3,000.75
+static String formatPriceCro(String price) {
+  // price comes as "3.75" or "25000.00"
+  float val = price.toFloat();
+  
+  // Split into whole and decimal parts
+  long whole = (long)val;
+  int decimals = (int)round((val - whole) * 100);
+  if (decimals < 0) decimals = -decimals;
+  
+  // Format whole part with . as thousands separator
+  String wholeStr = String(whole);
+  String formatted = "";
+  int len = wholeStr.length();
+  for (int i = 0; i < len; i++) {
+    if (i > 0 && (len - i) % 3 == 0) formatted += ".";
+    formatted += wholeStr[i];
+  }
+  
+  // Add decimal part with , as separator
+  String decStr = String(decimals);
+  if (decimals < 10) decStr = "0" + decStr;
+  formatted += "," + decStr;
+  
+  return formatted;
+}
+
 static void drawPriceTag(const ProductData &p)
 {
   sprite.fillSprite(TFT_BLACK);
 
   // --- Header row ---
   sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-  sprite.drawString(p.name, 20, 8, 4);
+  sprite.drawString(p.name, 20, 10, 4);
 
-  // IDD/IDP small, top right of left section
+  // IDD small, right side
   sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
-  String idText = "IDP:" + p.id + " IDD:" + p.id_display;
+  String idText = "IDD: " + p.id_display;
   int idW = sprite.textWidth(idText, 2);
-  sprite.drawString(idText, 520 - idW, 8, 2);
+  sprite.drawString(idText, 530 - idW, 18, 2);
 
-  sprite.drawFastHLine(20, 32 , 516, TFT_DARKGREY);
+  sprite.drawFastHLine(20, 42, 516, TFT_DARKGREY);
 
-  // --- Right side: Horizontal barcode ---
+  // --- Right side: Barcode ---
   drawEan13BarcodeHorizontal(556, 0, 84, 180, p.barcode);
 
-  // Last update below barcode
-  sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
-  sprite.drawString("Updated: " + p.updated, 20, 164, 1);
-
   // --- Left side: Price area ---
+  String unit = p.unit.length() > 0 ? p.unit : "KOM";
+  String priceFormatted = formatPriceCro(p.price);
+
   if(p.discount_price.length() > 0)
   {
-    // Old price crossed out
+    // CIJENA TREN label + old price crossed out
+    sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
+    sprite.drawString("PROSLA CIJENA: ", 20, 46, 2);
     sprite.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
-    sprite.drawString(p.price + " EUR", 20, 36, 4);
-    int oldW = sprite.textWidth(p.price + " EUR", 4);
-    sprite.drawFastHLine(20, 36 + 13, oldW, TFT_RED);
+    String oldPrice = priceFormatted + " EUR";
+    sprite.drawString(" " + oldPrice, 120, 46, 2);
+    int oldW = sprite.textWidth(oldPrice, 2);
+    sprite.drawFastHLine(125, 46 + 7, oldW, TFT_RED);
 
-    // Discount percentage
+    // POPUST DO DATUM/ISTEKA
+    sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
+    sprite.drawString("POPUST:", 20, 62, 2);
     sprite.setTextColor(TFT_RED, TFT_BLACK);
-    sprite.drawString("-" + p.discount_per + "%", 20 + oldW + 12, 36, 4);
+    sprite.drawString("-" + p.discount_per + "%  do " + p.discount_end, 80, 62, 2);
 
-    // Big discounted price
+    // CIJENA SNIŽENA - big discounted price with comma fix
     sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-    sprite.drawString(p.discount_price, 20, 68, 6);
-    int newW = sprite.textWidth(p.discount_price, 6);
+    String discFormatted = formatPriceCro(p.discount_price);
+    int commaPos = discFormatted.indexOf(',');
+    String beforeComma = discFormatted.substring(0, commaPos);
+    String afterComma = discFormatted.substring(commaPos + 1);
+    sprite.drawString(beforeComma, 20, 92, 6);
+    int bw = sprite.textWidth(beforeComma, 6);
+    sprite.drawString(",", 20 + bw, 108, 4);
+    int cw = sprite.textWidth(",", 4);
+    sprite.drawString(afterComma, 20 + bw + cw, 92, 6);
+    int newW = bw + cw + sprite.textWidth(afterComma, 6);
     sprite.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
-    sprite.drawString("EUR", 20 + newW + 10, 86, 4);
+    sprite.drawString("EUR", 20 + newW + 10, 110, 4);
 
-    // Lowest 30d price
+    // Right column - Najniža cijena u 30 dana
     sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
-    sprite.drawString("Lowest 30D: " + p.lowest_price + " EUR", 20, 115, 2);
+    sprite.drawString("Najniza cijena", 340, 46, 2);
+    sprite.drawString("u 30 dana:", 340, 63, 2);
+    sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+    sprite.drawString(formatPriceCro(p.lowest_price) + " EUR", 340, 81, 2);
 
+
+    // CIJENA PO KOM/KG/L
     sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
-    sprite.drawString("Discount ends: " + p.discount_end, 20, 130, 2 );
-    // Price per kg
+    sprite.drawString("CIJENA PO " + unit + ":", 20, 140, 2);
+    sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+    sprite.drawString(formatPriceCro(p.pricePerKg) + " EUR/" + unit, 20, 154, 2);
+
+    // Ažurirano
     sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
-    sprite.drawString("Price/kg: " + p.pricePerKg + " EUR/kg", 20, 145, 2);
+    sprite.drawString("Azurirano:", 340, 140, 2);
+    sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+    sprite.drawString(p.updated, 340, 154, 2);
   }
   else
   {
-    // Normal price - big
+    // Big price with comma fix
     sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-    sprite.drawString(p.price, 20, 50, 6);
-    int priceW = sprite.textWidth(p.price, 6);
+    int commaPos = priceFormatted.indexOf(',');
+    String beforeComma = priceFormatted.substring(0, commaPos);
+    String afterComma = priceFormatted.substring(commaPos + 1);
+    sprite.drawString(beforeComma, 20, 62, 6);
+    int bw = sprite.textWidth(beforeComma, 6);
+    sprite.drawString(",", 20 + bw, 78, 4);
+    int cw = sprite.textWidth(",", 4);
+    sprite.drawString(afterComma, 20 + bw + cw, 62, 6);
+    int priceW = bw + cw + sprite.textWidth(afterComma, 6);
     sprite.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
-    sprite.drawString("EUR", 20 + priceW + 12, 68, 4);
+    sprite.drawString("EUR", 20 + priceW + 10, 80, 4);
 
-    // Price per kg
+    // CIJENA PO KOM/KG/L
     sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
-    sprite.drawString("Price/kg: " + p.pricePerKg + " EUR/kg", 20, 100, 2);
+    sprite.drawString("CIJENA PO " + unit + ":", 20, 1, 4);
+    sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+    sprite.drawString(formatPriceCro(p.pricePerKg) + " EUR/" + unit, 20, 155, 4);
+
+    // Ažurirano
+    sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
+    sprite.drawString("Azurirano:", 400, 148, 2);
+    sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+    sprite.drawString(p.updated, 400, 162, 2);
   }
 
   // Push to LCD
@@ -443,6 +510,7 @@ void handleUpdate()
   prod.putString("discount_price",g_current.discount_price);
   prod.putString("lowest_price",g_current.lowest_price);
   prod.putString("discount_end",g_current.discount_end);
+  prod.putString("unit",g_current.unit);
   prod.end();
   drawPriceTag(g_current);
 
@@ -669,6 +737,7 @@ void setup()
         saved.discount_price = prod.getString("discount_price","");
         saved.lowest_price = prod.getString("lowest_price","");
         saved.discount_end = prod.getString("discount_end","");
+        saved.unit = prod.getString("unit","");
         prod.end();
         drawPriceTag(saved);
       } 

@@ -697,6 +697,11 @@ input:disabled {
     min-width: 150px;
 }
 
+/* Keep action buttons on one line */
+.data-table td:last-child {
+    white-space: nowrap;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
     .stats-row {

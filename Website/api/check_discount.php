@@ -14,12 +14,12 @@
         $url = "http://" . $ip . "/update";
         $payload = json_encode([
             "id_display"    => strval($display['id_display']),
-            "id"            => $row['id_product'],
+            "id"            => strval($row['id_product']),
             "name"          => $row['name'],
-            "price"         => $row['price'],
-            "price_per_kg"  => $row['price_per_kg'],
+            "price"         => number_format(floatval($row['price']), 2, '.', ''),
+            "price_per_kg"  => number_format(floatval($row['price_per_kg']), 2, '.', ''),
             "unit"          => $row['unit'],
-            "quantity"      => $row['quantity'],
+            "quantity"      => $row['quantity'] !== null ? number_format(floatval($row['quantity']), 3, '.', '') : null,
             "barcode"       => $row['barcode'],
             "updated"       => $row['last_price_change'],
             "discount_per"  => null,

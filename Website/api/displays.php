@@ -32,9 +32,23 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
 }  else if($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     $id = intval($data['id_display']);
     $admin_id = intval($data['admin_id']);
-    
+
     $old = $conn->query("SELECT * FROM displays WHERE id_display = $id")->fetch_assoc();
     $ip_old = $old['ip'];
+
+    // Clear the display screen before removing it
+    if (!empty($ip_old)) {
+        $clear = json_encode(["id_display" => strval($id), "clear" => true]);
+        $ch = curl_init("http://" . $ip_old . "/update");
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $clear);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 2);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_exec($ch);
+        curl_close($ch);
+    }
+
     $sql_insert = "INSERT INTO logs (id_log, admin_id, display_id, changed_at, what_changed) VALUES (NULL, $admin_id, $id, NOW(), 'Deleted display with IP: $ip_old')";
     $sql = "DELETE FROM displays WHERE id_display = $id";
     try {
@@ -81,30 +95,33 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
             $sql = "SELECT * FROM products WHERE id_product = $product_id";
             $result = $conn->query($sql);
             $product = $result->fetch_assoc();
-            if(!empty($product['discount_per']) && $product['discount_end'] > date('Y-m-d H:i:s')) {
-                $discount_price = $product['price'] * (1 - $product['discount_per'] / 100);
-                $sql = "SELECT MIN(price) AS lowest_price FROM price_history WHERE product_id = $product_id AND changed_at >= NOW() - INTERVAL 30 DAY";
-                $lowest_price = $conn->query($sql)->fetch_assoc();
-                $min_price = $lowest_price['lowest_price'] ?? $product['price'];
+            if (!empty($product['discount_per']) && $product['discount_end'] > date('Y-m-d H:i:s')) {
+                $dp      = floatval($product['discount_per']);
+                $d_price = round(floatval($product['price']) * (1 - $dp / 100), 2);
+                $hist    = $conn->query("SELECT MIN(price) AS lp FROM price_history WHERE product_id = $product_id AND changed_at >= NOW() - INTERVAL 30 DAY")->fetch_assoc();
+                $low     = ($hist['lp'] !== null) ? min(floatval($hist['lp']), floatval($product['price'])) : floatval($product['price']);
+                $pl_discount_per   = number_format($dp, 2, '.', '');
+                $pl_discount_price = number_format($d_price, 2, '.', '');
+                $pl_lowest_price   = number_format($low, 2, '.', '');
+                $pl_discount_end   = $product['discount_end'];
             } else {
-                $discount_price = null;
-                $min_price = null;
+                $pl_discount_per = $pl_discount_price = $pl_lowest_price = $pl_discount_end = null;
             }
             $url = "http://" . $ip . "/update";
             $payload = json_encode([
                 "id_display"    => strval($id),
-                "id"            => $product['id_product'],
+                "id"            => strval($product['id_product']),
                 "name"          => $product['name'],
-                "price"         => $product['price'],
-                "price_per_kg"  => $product['price_per_kg'],
+                "price"         => number_format(floatval($product['price']), 2, '.', ''),
+                "price_per_kg"  => number_format(floatval($product['price_per_kg']), 2, '.', ''),
                 "unit"          => $product['unit'],
-                "quantity"      => $product['quantity'],
+                "quantity"      => $product['quantity'] !== null ? number_format(floatval($product['quantity']), 3, '.', '') : null,
                 "barcode"       => $product['barcode'],
                 "updated"       => $product['last_price_change'],
-                "discount_per"  => $product['discount_per'],
-                "discount_price"=> strval($discount_price),
-                "lowest_price"  => strval($min_price),
-                "discount_end"  => $product['discount_end'],
+                "discount_per"  => $pl_discount_per,
+                "discount_price"=> $pl_discount_price,
+                "lowest_price"  => $pl_lowest_price,
+                "discount_end"  => $pl_discount_end,
                 ]);
             error_log("Sending payload: " . $payload);
             $ch = curl_init($url);                    // create curl request to $url
