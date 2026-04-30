@@ -10,6 +10,9 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     $result = $conn->query($sql);
     $rows = [];
     while($row = $result->fetch_assoc()) {
+        // Replace raw datetime strings with dd-mm-yyyy format for payloads
+        $row['discount_end'] = !empty($row['discount_end']) ? date('d-m-Y', strtotime($row['discount_end'])) : null;
+        $row['last_price_change'] = !empty($row['last_price_change']) ? date('d-m-Y', strtotime($row['last_price_change'])) : null;
         $rows[] = $row;
     }
     echo json_encode($rows);
@@ -99,11 +102,11 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
                 "unit"          => $unit,
                 "quantity"      => $quantity > 0 ? number_format($quantity, 3, '.', '') : null,
                 "barcode"       => $data['barcode'],
-                "updated"       => date('Y-m-d H:i:s'),
+                "updated"       => date('d-m-Y'),
                 "discount_per"  => $pl_discount_per,
                 "discount_price"=> $pl_discount_price,
                 "lowest_price"  => $pl_lowest_price,
-                "discount_end"  => $pl_discount_end,
+                "discount_end"  => $pl_discount_end ? date('d-m-Y', strtotime($pl_discount_end)) : null
             ]);
             $ch = curl_init($url);
             curl_setopt($ch, CURLOPT_POST, true);

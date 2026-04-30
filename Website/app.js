@@ -309,7 +309,8 @@ function editProduct(id) {
         updateUnitLabels('edit');
         document.getElementById('editBarcode').value = p.barcode;
         document.getElementById('editDiscount').value = p.discount_per || '';
-        document.getElementById('editDiscountExpiry').value = p.discount_end || '';
+        const expiryEl = document.getElementById('editDiscountExpiry');
+        expiryEl.value = p.discount_end || '';
         if (p.discount_per && p.discount_per !== "0") {
             document.getElementById('editDiscountToggle').checked = true;
             toggleDiscount(true);
@@ -351,7 +352,7 @@ async function saveEditProduct() {
             currency_code: document.getElementById('editCurrencyCode').value,
             barcode,
             discount_per: document.getElementById('editDiscount').value,
-            discount_end: document.getElementById('editDiscountExpiry').value,
+            discount_end: datetimeLocalToSQL(document.getElementById('editDiscountExpiry').value),
             admin_id: getSession().id_admin
         })
     });
@@ -481,10 +482,21 @@ function clearFilters() {
 function openModal(id) { document.getElementById(id).style.display = 'flex'; }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
+
+function formatDateDisplay(dateStr) {
+    if(!dateStr) return '—';
+    const d = parseDateFlexible(dateStr);
+    if (!d) return '—';
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+}
+
 function formatDate(dateStr) {
     if(!dateStr) return '—';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return '—'; // check if date is valid
+    const d = parseDateFlexible(dateStr);
+    if (!d) return '—'; // check if date is valid
     // build dd/mm/yyyy HH:mm from the Date object
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -492,6 +504,75 @@ function formatDate(dateStr) {
     const HH = String(d.getHours()).padStart(2, '0');
     const MM = String(d.getMinutes()).padStart(2, '0');
     return `${dd}/${mm}/${yyyy} ${HH}:${MM}`;
+}
+
+// Parse date strings flexibly. Supports:
+// - dd-mm-yyyy (returns date at 00:00 local)
+// - yyyy-mm-dd HH:MM:SS
+// - ISO-like strings (yyyy-mm-ddTHH:MM)
+function parseDateFlexible(dateStr) {
+    if (!dateStr) return null;
+    // dd-mm-yyyy
+    const m = String(dateStr).match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (m) {
+        const day = Number(m[1]);
+        const month = Number(m[2]) - 1;
+        const year = Number(m[3]);
+        return new Date(year, month, day, 0, 0, 0);
+    }
+    // Try ISO / SQL datetime
+    let attempt = String(dateStr).replace(' ', 'T');
+    const d = new Date(attempt);
+    if (!isNaN(d.getTime())) return d;
+    return null;
+}
+
+// Convert datetime-local value (YYYY-MM-DDTHH:MM) to SQL datetime 'YYYY-MM-DD HH:MM:SS'
+function datetimeLocalToSQL(v) {
+    if (!v) return '';
+    const parts = String(v).split('T');
+    const date = parts[0];
+    const time = parts[1] || '00:00';
+    return date + ' ' + time + ':00';
+}
+
+// Convert dd-mm-yyyy -> 'YYYY-MM-DD 00:00:00' for API payloads
+function ddmmyyyyToSQL(v) {
+    if (!v) return '';
+    const m = String(v).match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (!m) return '';
+    return `${m[3]}-${m[2]}-${m[1]} 00:00:00`;
+}
+
+// Convert various product date strings to SQL datetime string 'YYYY-MM-DD HH:MM:SS'
+function toSQLDatetimeFromString(v) {
+    if (!v) return '';
+    const s = String(v).trim();
+    // Already SQL datetime
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/.test(s)) {
+        return s.length === 16 ? s + ':00' : s;
+    }
+    // ISO with T
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(s)) {
+        return s.replace('T', ' ').length === 16 ? s.replace('T', ' ') + ':00' : s.replace('T', ' ');
+    }
+    // dd-mm-yyyy or dd-mm-yyyy HH:MM(:SS)
+    const m = s.match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+    if (m) {
+        const day = m[1], month = m[2], year = m[3];
+        const hh = m[4] || '00', mm = m[5] || '00', ss = m[6] || '00';
+        return `${year}-${month}-${day} ${hh}:${mm}:${ss}`;
+    }
+    // Fallback: try parsing and format
+    const d = parseDateFlexible(s);
+    if (!d) return '';
+    const YYYY = d.getFullYear();
+    const MM = String(d.getMonth() + 1).padStart(2, '0');
+    const DD = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    const ss = String(d.getSeconds()).padStart(2, '0');
+    return `${YYYY}-${MM}-${DD} ${hh}:${mi}:${ss}`;
 }
 
 const UNIT_QUANTITY_LABEL = { KG: 'Weight (kg)', L: 'Volume (L)', KOM: 'Quantity (pcs)' };
@@ -591,7 +672,7 @@ async function saveInlineEdit(id, field, value) {
         currency_code: product.currency_code,
         barcode: field === 'barcode' ? normalizedValue : (product.barcode ?? ''),
         discount_per: product.discount_per ?? '',
-        discount_end: product.discount_end ?? '',
+        discount_end: toSQLDatetimeFromString(product.discount_end_raw ?? product.discount_end ?? ''),
         admin_id: getSession().id_admin
     };
 

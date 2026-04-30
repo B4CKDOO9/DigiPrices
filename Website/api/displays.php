@@ -82,7 +82,8 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     if ($section_old != $section) {
         $changes .= "Section changed from $section_old to $section";
     }
-    if($changes != "") {
+
+    if ($changes != "") {
         $sql_insert = "INSERT INTO logs (id_log, admin_id, display_id, product_id, changed_at, what_changed) VALUES (NULL, $admin_id, $id, $product_id, NOW(), '$changes')";
         $conn->query($sql_insert);
     }
@@ -117,11 +118,11 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
                 "unit"          => $product['unit'],
                 "quantity"      => $product['quantity'] !== null ? number_format(floatval($product['quantity']), 3, '.', '') : null,
                 "barcode"       => $product['barcode'],
-                "updated"       => $product['last_price_change'],
+                "updated"       => !empty($product['last_price_change']) ? date('d-m-Y', strtotime($product['last_price_change'])) : null,
                 "discount_per"  => $pl_discount_per,
                 "discount_price"=> $pl_discount_price,
                 "lowest_price"  => $pl_lowest_price,
-                "discount_end"  => $pl_discount_end,
+                "discount_end"  => $pl_discount_end ? date('d-m-Y', strtotime($pl_discount_end)) : null
                 ]);
             error_log("Sending payload: " . $payload);
             $ch = curl_init($url);                    // create curl request to $url
