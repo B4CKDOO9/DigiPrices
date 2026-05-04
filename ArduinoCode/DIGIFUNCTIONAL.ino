@@ -106,8 +106,8 @@ static uint32_t fnv1a_32(const uint8_t *data, size_t len)
 
 static uint32_t hashProduct(const ProductData &p)
 {
-  // Hash only the fields that should trigger redraw
-  String joined = p.id + "|" + p.name + "|" + p.price + "|" + p.pricePerKg + "|" + p.barcode + "|" + p.updated;
+  String joined = p.id + "|" + p.name + "|" + p.price + "|" + p.pricePerKg + "|" + p.barcode + "|" + p.updated
+                + "|" + p.discount_per + "|" + p.discount_price + "|" + p.discount_end;
   return fnv1a_32((const uint8_t *)joined.c_str(), joined.length());
 }
 
@@ -283,8 +283,10 @@ static void drawEan13BarcodeHorizontal(int x, int y, int w, int h, const String 
   for (int i = 0; i < 6; i++)
   {
     int d = digits[1 + i] - '0';
-    if (parity[i] == 'L') bits += L_CODE[d];
-    else bits += G_CODE[d];
+    if (parity[i] == 'L')
+      bits += L_CODE[d];
+    else
+      bits += G_CODE[d];
   }
   bits += "01010";
   for (int i = 0; i < 6; i++)
@@ -301,7 +303,8 @@ static void drawEan13BarcodeHorizontal(int x, int y, int w, int h, const String 
   for (int i = 0; i < modules; i++)
   {
     bool isBar = (bits[i] == '1');
-    if (!isBar) continue;
+    if (!isBar)
+      continue;
 
     bool isGuard =
         (i < 3) ||
@@ -316,7 +319,7 @@ static void drawEan13BarcodeHorizontal(int x, int y, int w, int h, const String 
 
   // Digits vertical — spaced evenly
   // Create tiny sprite for rotated text
-   sprite.setTextColor(TFT_WHITE, TFT_BLACK);
+  sprite.setTextColor(TFT_WHITE, TFT_BLACK);
   int digitX = x + w - 10;
   for (int i = 0; i < 13; i++)
   {
@@ -328,29 +331,34 @@ static void drawEan13BarcodeHorizontal(int x, int y, int w, int h, const String 
 
 // ===================== UI drawing =====================
 // Croatian number format: 3.000,75 instead of 3,000.75
-static String formatPriceCro(String price) {
+static String formatPriceCro(String price)
+{
   // price comes as "3.75" or "25000.00"
   float val = price.toFloat();
-  
+
   // Split into whole and decimal parts
   long whole = (long)val;
   int decimals = (int)round((val - whole) * 100);
-  if (decimals < 0) decimals = -decimals;
-  
+  if (decimals < 0)
+    decimals = -decimals;
+
   // Format whole part with . as thousands separator
   String wholeStr = String(whole);
   String formatted = "";
   int len = wholeStr.length();
-  for (int i = 0; i < len; i++) {
-    if (i > 0 && (len - i) % 3 == 0) formatted += ".";
+  for (int i = 0; i < len; i++)
+  {
+    if (i > 0 && (len - i) % 3 == 0)
+      formatted += ".";
     formatted += wholeStr[i];
   }
-  
+
   // Add decimal part with , as separator
   String decStr = String(decimals);
-  if (decimals < 10) decStr = "0" + decStr;
+  if (decimals < 10)
+    decStr = "0" + decStr;
   formatted += "," + decStr;
-  
+
   return formatted;
 }
 
@@ -377,7 +385,7 @@ static void drawPriceTag(const ProductData &p)
   String unit = p.unit.length() > 0 ? p.unit : "KOM";
   String priceFormatted = formatPriceCro(p.price);
 
-  if(p.discount_price.length() > 0)
+  if (p.discount_price.length() > 0)
   {
     // CIJENA TREN label + old price crossed out
     sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
@@ -411,11 +419,9 @@ static void drawPriceTag(const ProductData &p)
 
     // Right column - Najniža cijena u 30 dana
     sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
-    sprite.drawString("Najniza cijena", 340, 46, 2);
-    sprite.drawString("u 30 dana:", 340, 63, 2);
+    sprite.drawString("Najniza cijena u 30 dana:", 340, 46, 2);
     sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-    sprite.drawString(formatPriceCro(p.lowest_price) + " EUR", 340, 81, 2);
-
+    sprite.drawString(formatPriceCro(p.lowest_price) + " EUR", 340, 60, 2);
 
     // CIJENA PO KOM/KG/L
     sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
@@ -425,9 +431,7 @@ static void drawPriceTag(const ProductData &p)
 
     // Ažurirano
     sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
-    sprite.drawString("Azurirano:", 340, 140, 2);
-    sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-    sprite.drawString(p.updated, 340, 154, 2);
+    sprite.drawString("Azurirano: " + p.updated, 340, 160, 2);
   }
   else
   {
@@ -447,15 +451,13 @@ static void drawPriceTag(const ProductData &p)
 
     // CIJENA PO KOM/KG/L
     sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
-    sprite.drawString("CIJENA PO " + unit + ":", 20, 1, 4);
+    sprite.drawString("CIJENA PO " + unit + ":", 20, 130, 4);
     sprite.setTextColor(TFT_WHITE, TFT_BLACK);
     sprite.drawString(formatPriceCro(p.pricePerKg) + " EUR/" + unit, 20, 155, 4);
 
     // Ažurirano
     sprite.setTextColor(TFT_DARKGREY, TFT_BLACK);
-    sprite.drawString("Azurirano:", 400, 148, 2);
-    sprite.setTextColor(TFT_WHITE, TFT_BLACK);
-    sprite.drawString(p.updated, 400, 162, 2);
+    sprite.drawString("Azurirano: " + p.updated, 395, 160, 2);
   }
 
   // Push to LCD
@@ -479,9 +481,24 @@ void handleUpdate()
 {
 
   String body = server.arg("plain");
-  ProductData incoming;
   Serial.println("Received: " + body);
 
+  {
+    StaticJsonDocument<64> clearDoc;
+    if (deserializeJson(clearDoc, body) == DeserializationError::Ok && clearDoc["clear"] == true)
+    {
+      panelBlankAndBacklightOff();
+      g_hasDrawnOnce = false;
+      g_lastHash = 0;
+      prod.begin("product", false);
+      prod.clear();
+      prod.end();
+      server.send(200, "application/json", "{\"success\":true}");
+      return;
+    }
+  }
+
+  ProductData incoming;
   if (!parseProductJson(body, incoming))
   {
     server.send(400, "application/json", "{\"success\":false}");
@@ -506,11 +523,11 @@ void handleUpdate()
   prod.putString("pricePerKg", g_current.pricePerKg);
   prod.putString("barcode", g_current.barcode);
   prod.putString("updated", g_current.updated);
-  prod.putString("discount_per",g_current.discount_per);
-  prod.putString("discount_price",g_current.discount_price);
-  prod.putString("lowest_price",g_current.lowest_price);
-  prod.putString("discount_end",g_current.discount_end);
-  prod.putString("unit",g_current.unit);
+  prod.putString("discount_per", g_current.discount_per);
+  prod.putString("discount_price", g_current.discount_price);
+  prod.putString("lowest_price", g_current.lowest_price);
+  prod.putString("discount_end", g_current.discount_end);
+  prod.putString("unit", g_current.unit);
   prod.end();
   drawPriceTag(g_current);
 
@@ -531,7 +548,7 @@ static void handleSave()
   prefs.begin("WiFi", false);
   prefs.putString("ssid", ssid);
   prefs.putString("pass", pass);
-  prefs.putString("serverip",serverip);
+  prefs.putString("serverip", serverip);
   prefs.end();
   drawConnectingScreen();
   bool connected = wifiEnsureConnected(ssid, pass, 8000);
@@ -632,11 +649,11 @@ static void handlePortalError()
 
 static void registerWithServer(String serverip)
 {
-  String url = "http://" + serverip + "/DigiPrices/api/register.php"; //REMEBER TO REMOVE HARDOCED LINK!!!!
+  String url = "http://" + serverip + "/DigiPrices/api/register.php"; // REMEBER TO REMOVE HARDOCED LINK!!!!
   String payload = "{\"ip\":\"" + WiFi.localIP().toString() + "\"}";
   HTTPClient http;
   http.begin(url);
-  http.addHeader("Content-Type","application/json");
+  http.addHeader("Content-Type", "application/json");
   int http_code = http.POST(payload);
   http.end();
   Serial.println("Server IP: " + serverip);
@@ -685,7 +702,7 @@ void setup()
   // prefs.clear(); //for clearing the stored password and ssid
   String ssid = prefs.getString("ssid", "");
   String pass = prefs.getString("pass", "");
-  String serverip = prefs.getString("serverip","");
+  String serverip = prefs.getString("serverip", "");
   prefs.end();
 
   if (ssid == "")
@@ -723,24 +740,24 @@ void setup()
 
       prod.begin("product", true);
       String savedName = prod.getString("name", "");
-      if(savedName != "") 
+      if (savedName != "")
       {
         ProductData saved;
-        saved.id = prod.getString("id","");
-        saved.id_display = prod.getString("id_display","");
-        saved.name = prod.getString("name","");
-        saved.price = prod.getString("price","");
-        saved.pricePerKg = prod.getString("pricePerKg","");
-        saved.barcode = prod.getString("barcode","");
-        saved.updated = prod.getString("updated","");
-        saved.discount_per = prod.getString("discount_per","");
-        saved.discount_price = prod.getString("discount_price","");
-        saved.lowest_price = prod.getString("lowest_price","");
-        saved.discount_end = prod.getString("discount_end","");
-        saved.unit = prod.getString("unit","");
+        saved.id = prod.getString("id", "");
+        saved.id_display = prod.getString("id_display", "");
+        saved.name = prod.getString("name", "");
+        saved.price = prod.getString("price", "");
+        saved.pricePerKg = prod.getString("pricePerKg", "");
+        saved.barcode = prod.getString("barcode", "");
+        saved.updated = prod.getString("updated", "");
+        saved.discount_per = prod.getString("discount_per", "");
+        saved.discount_price = prod.getString("discount_price", "");
+        saved.lowest_price = prod.getString("lowest_price", "");
+        saved.discount_end = prod.getString("discount_end", "");
+        saved.unit = prod.getString("unit", "");
         prod.end();
         drawPriceTag(saved);
-      } 
+      }
       else
       {
         prod.end();

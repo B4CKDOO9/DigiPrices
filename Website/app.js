@@ -310,7 +310,12 @@ function editProduct(id) {
         document.getElementById('editBarcode').value = p.barcode;
         document.getElementById('editDiscount').value = p.discount_per || '';
         const expiryEl = document.getElementById('editDiscountExpiry');
-        expiryEl.value = p.discount_end || '';
+        if (p.discount_end) {
+            // datetime-local input requires YYYY-MM-DDTHH:MM; SQL gives YYYY-MM-DD HH:MM:SS
+            expiryEl.value = String(p.discount_end).replace(' ', 'T').substring(0, 16);
+        } else {
+            expiryEl.value = '';
+        }
         if (p.discount_per && p.discount_per !== "0") {
             document.getElementById('editDiscountToggle').checked = true;
             toggleDiscount(true);
