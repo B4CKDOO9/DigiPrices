@@ -13,8 +13,7 @@ the future I have many more inovations that I would like to add to this display,
   <br>
 # Instalation
 ## Display setup
-Firstly you need to install xampp the version doesnt matter. After you install xampp, the next step is to setup the display. Every file is in icluded in repository that
-**NEEDS TO BE IN THE SAME PROJECT AS THE .INO FILE** when you are finished with adding the files to the project in Arduino IDE, you need to install libraries and board manager,
+Next step is to setup the display. Every file in ArduinoCode file **NEEDS TO BE IN THE SAME PROJECT AS THE .INO FILE** when you are finished with adding the files to the project in Arduino IDE, you need to install libraries and board manager,
 **DO NOT DEVIATE FROM VERSIONS**. 
 <br>
 ### Libraries
@@ -34,7 +33,7 @@ Firstly you need to install xampp the version doesnt matter. After you install x
 <p>When you have finished with the display flash it <b style="color:red;">BEWARE OF LINE 652 in arduino ino file check the path in the xampp</b></p>
 
 ## Database and Website setup
-<p>When you are done with this the next step is to setup xampp. There you can paste the files from github in the folder <b>Website</b>, to <b>File Manager --> This PC -->
+<p>First install xampp. When you are done with this the next step is to setup xampp. There you can paste the files from github in the folder <b>Website</b>, to <b>File Manager --> This PC -->
 local disk --> xampp --> htdocs --> paste </b>, with that done you are one step closer! Then you will need to import the given database from repository to <b>phpmyadmin</b>,
 first create a new databse named <b>digiprices</b>, then open it <b>import --> choose file --> import </b></p>
 
@@ -49,3 +48,8 @@ netsh advfirewall firewall add rule name="XAMPP Apache" dir=in action=allow prog
 <br>
 
 # How to use
+<p>The process is pretty straight forward. When the display is booted on with the code it will give you instructions on what you need to do. Conect to the network, type in the given IP to the browser. <b>Somtimes it wont work in normal browser and I dont get why. But you can re-open it in incognito window.</b> If you get an error, re-boot the display using the reset button and re-fresh <b>Ctrl + Shift +R </b> the page once connected again. The prompt will ask you for <b>SSID, PASSWORD, IP</b>, these are of you network that you want to connect the display to. The IP addres is of your PC where the xampp is hosted <b>Win key --> CMD --> ipconfig</b>. Once you fill that in if everything was done correctly and hopefuly the network is stable enough and without strict rules the display should be automaticaly added to the admin page. To acces admin page (login page), go to <b>xampp --> admin --> Website</b>, the login credidentials (you can see in database since we havent implemented hashing <b>Username: admin Password: admin123</b>. Then you can explore the page freely. I hope it is intuitive on how do you add products, edit them, delete them. <b>Keep in mind some functionalities are only available when you click edit</b></p>
+
+# Final words
+There is much we want to add to this, but we still dont have enough knowledge to do so. But one day we hope to integrate LoRa, our custom rail to battery switch, E-InkDisplays, and  EmEXT (Emergency Exit Technoilogy) that we wont discuss now because of intelectual theft.
+
