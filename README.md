@@ -1,3 +1,7 @@
+This project is licensed under 
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+
+
 # DigiPrices Quick Overview
 DigiPrices is a finals project for graduating from a Secondary Vocational School in Samobor. This is the source code for this project that I hope I will bring to life compleatly
 at a later date. Since I have been sitting at this idea since 2021, theere has been a boom in electronicaly managed prices, but these onse are different and you may learn how. For
